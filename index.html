@@ -1593,10 +1593,12 @@
             fecharCriarPartyModal();
             socket.emit('criar_party_boss', { username: currentUser, partyName: nomeParty, bossType: tipoBoss });
         }
+
         socket.on('party_criada_sucesso', (party) => {
             currentParty = party;
             renderizarSalaParty();
         });
+
         socket.on('lista_salas_boss', (salas) => {
             let container = document.getElementById("publicPartiesList");
             if (!salas.length) {
@@ -1811,7 +1813,7 @@
                 }, 900);
             } else {
                 if (bossActiveFighter.owner === currentUser) {
-                    document.getElementById("bossTargetInstruction").innerText = `Seu Turno (${bossActiveFighter.name})! Selecione o Boss e escolha o golpe.`;
+                    document.getElementById("bossTargetInstruction").innerText = `Seu Turno (${bossActiveFighter.name})! [CE: ${bossActiveFighter.ce}/${bossActiveFighter.maxCe}] Selecione o Boss e escolha o golpe.`;
                     document.getElementById("bossActionControls").style.display = "flex";
                 } else {
                     document.getElementById("bossActionControls").style.display = "none";
@@ -1847,7 +1849,7 @@
                     ${getAvatarHTML(p)}
                     <strong style="color:#fff; font-size:0.9rem;">${p.name}</strong>
                     <small style="font-size:0.7rem; color:var(--gold-accent);">Player: ${p.owner}</small>
-                    <small style="font-size:0.75rem; color:#cbd5e1;">HP: ${p.hp}/${p.maxHp}</small>
+                    <small style="font-size:0.75rem; color:#cbd5e1;">HP: ${p.hp}/${p.maxHp} | CE: ${p.ce}/${p.maxCe}</small>
                     <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:${Math.max(0, (p.hp/p.maxHp)*100)}%"></div></div>
                 </div>
             `).join('');
@@ -1865,14 +1867,23 @@
 
         function executarTurnoBoss(tipo) {
             let golpe = bossActiveFighter.golpes[tipo] || bossActiveFighter.golpes.basico;
+            let custoChakra = CHAKRA_COSTS[tipo] || 0;
+
+            if (bossActiveFighter.ce < custoChakra) {
+                alert(`${bossActiveFighter.name} não tem Chakra suficiente (${bossActiveFighter.ce}/${custoChakra} CE)!`);
+                return;
+            }
+
             if (!bossSelectedTargetUid) { alert("Selecione o Boss para atacar!"); return; }
             let alvo = bossEnemyTeam.find(e => e.uid === bossSelectedTargetUid);
             if (!alvo || alvo.hp <= 0) { alert("Alvo inválido!"); return; }
 
+            bossActiveFighter.ce -= custoChakra;
+
             let dano = golpe.dano + Math.floor(bossActiveFighter.stats.atk * 0.15);
             alvo.hp = Math.max(0, alvo.hp - dano);
 
-            document.getElementById("bossBattleLog").innerHTML += `<div>👊 ${bossActiveFighter.name} usou <strong>${golpe.nome}</strong> e causou ${dano} de dano no Boss!</div>`;
+            document.getElementById("bossBattleLog").innerHTML += `<div>👊 ${bossActiveFighter.name} usou <strong>${golpe.nome}</strong> (-${custoChakra} CE) e causou ${dano} de dano no Boss!</div>`;
             let logBox = document.getElementById("bossBattleLog");
             logBox.scrollTop = logBox.scrollHeight;
 
@@ -2014,7 +2025,7 @@
                     executarProximoTurnoCampanha();
                 }, 900);
             } else {
-                document.getElementById("targetInstruction").innerText = `Turno de ${activeFighter.name}: Selecione um alvo e escolha sua ação.`;
+                document.getElementById("targetInstruction").innerText = `Turno de ${activeFighter.name} [CE: ${activeFighter.ce}/${activeFighter.maxCe}]: Selecione um alvo e escolha sua ação.`;
                 document.getElementById("actionControls").style.display = "flex";
             }
         }
@@ -2024,7 +2035,7 @@
                 <div class="fighter-box ${activeFighter && activeFighter.uid === p.uid && p.hp > 0 ? 'active-turn' : ''} ${p.hp <= 0 ? 'dead' : ''}">
                     ${getAvatarHTML(p)}
                     <strong style="color:#fff; font-size:0.9rem;">${p.name}</strong>
-                    <small style="font-size:0.75rem; color:#cbd5e1;">HP: ${p.hp}/${p.maxHp}</small>
+                    <small style="font-size:0.75rem; color:#cbd5e1;">HP: ${p.hp}/${p.maxHp} | CE: ${p.ce}/${p.maxCe}</small>
                     <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:${Math.max(0, (p.hp/p.maxHp)*100)}%"></div></div>
                 </div>
             `).join('');
@@ -2042,14 +2053,23 @@
 
         function executarTurno(tipo) {
             let golpe = activeFighter.golpes[tipo] || activeFighter.golpes.basico;
+            let custoChakra = CHAKRA_COSTS[tipo] || 0;
+
+            if (activeFighter.ce < custoChakra) {
+                alert(`${activeFighter.name} não tem Chakra suficiente (${activeFighter.ce}/${custoChakra} CE)!`);
+                return;
+            }
+
             if (!selectedTargetUid) { alert("Selecione um alvo inimigo!"); return; }
             let alvo = enemyTeam.find(e => e.uid === selectedTargetUid);
             if (!alvo || alvo.hp <= 0) { alert("Alvo inválido!"); return; }
 
+            activeFighter.ce -= custoChakra;
+
             let dano = golpe.dano + Math.floor(activeFighter.stats.atk * 0.15);
             alvo.hp = Math.max(0, alvo.hp - dano);
 
-            document.getElementById("battleLog").innerHTML += `<div>👊 ${activeFighter.name} usou <strong>${golpe.nome}</strong> e causou ${dano} de dano.</div>`;
+            document.getElementById("battleLog").innerHTML += `<div>👊 ${activeFighter.name} usou <strong>${golpe.nome}</strong> (-${custoChakra} CE) e causou ${dano} de dano.</div>`;
             document.getElementById("actionControls").style.display = "none";
             selectedTargetUid = null;
             currentQueueIdx++;
@@ -2175,7 +2195,7 @@
         function executarProximoTurnoPvp() {
             if (!pvpPlayerTeam.some(p => p.hp > 0)) {
                 pvpStreak = 0;
-                pvpPoints = Math.max(0, pvpPoints - 5); // CORRIGIDO: Perde 5 pontos por derrota, sem ficar negativo
+                pvpPoints = Math.max(0, pvpPoints - 5);
                 salvarJogo();
                 alert("Derrota na partida Ranqueada! -5 Pontos e sequência de vitórias resetada para 0.");
                 renderPvpLobby();
@@ -2225,7 +2245,7 @@
                     executarProximoTurnoPvp();
                 }, 900);
             } else {
-                document.getElementById("pvpTargetInstruction").innerText = `Seu Turno (${pvpActiveFighter.name})! Selecione o alvo oponente e escolha o golpe.`;
+                document.getElementById("pvpTargetInstruction").innerText = `Seu Turno (${pvpActiveFighter.name}) [CE: ${pvpActiveFighter.ce}/${pvpActiveFighter.maxCe}]! Selecione o alvo oponente e escolha o golpe.`;
                 document.getElementById("pvpActionControls").style.display = "flex";
             }
         }
@@ -2235,7 +2255,7 @@
                 <div class="fighter-box ${pvpActiveFighter && pvpActiveFighter.uid === p.uid && p.hp > 0 ? 'active-turn' : ''} ${p.hp <= 0 ? 'dead' : ''}">
                     ${getAvatarHTML(p)}
                     <strong style="color:#fff; font-size:0.9rem;">${p.name}</strong>
-                    <small style="font-size:0.75rem; color:#cbd5e1;">HP: ${p.hp}/${p.maxHp}</small>
+                    <small style="font-size:0.75rem; color:#cbd5e1;">HP: ${p.hp}/${p.maxHp} | CE: ${p.ce}/${p.maxCe}</small>
                     <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:${Math.max(0, (p.hp/p.maxHp)*100)}%"></div></div>
                 </div>
             `).join('');
@@ -2253,14 +2273,23 @@
 
         function executarTurnoPvp(tipo) {
             let golpe = pvpActiveFighter.golpes[tipo] || pvpActiveFighter.golpes.basico;
+            let custoChakra = CHAKRA_COSTS[tipo] || 0;
+
+            if (pvpActiveFighter.ce < custoChakra) {
+                alert(`${pvpActiveFighter.name} não tem Chakra suficiente (${pvpActiveFighter.ce}/${custoChakra} CE)!`);
+                return;
+            }
+
             if (!pvpSelectedTargetUid) { alert("Selecione um oponente para atacar!"); return; }
             let alvo = pvpEnemyTeam.find(e => e.uid === pvpSelectedTargetUid);
             if (!alvo || alvo.hp <= 0) { alert("Alvo inválido!"); return; }
 
+            pvpActiveFighter.ce -= custoChakra;
+
             let dano = golpe.dano + Math.floor(pvpActiveFighter.stats.atk * 0.15);
             alvo.hp = Math.max(0, alvo.hp - dano);
 
-            document.getElementById("pvpBattleLog").innerHTML += `<div>👊 ${pvpActiveFighter.name} usou <strong>${golpe.nome}</strong> e causou ${dano} de dano!</div>`;
+            document.getElementById("pvpBattleLog").innerHTML += `<div>👊 ${pvpActiveFighter.name} usou <strong>${golpe.nome}</strong> (-${custoChakra} CE) e causou ${dano} de dano!</div>`;
             let logBox = document.getElementById("pvpBattleLog");
             logBox.scrollTop = logBox.scrollHeight;
 
