@@ -1593,7 +1593,10 @@
             fecharCriarPartyModal();
             socket.emit('criar_party_boss', { username: currentUser, partyName: nomeParty, bossType: tipoBoss });
         }
-
+        socket.on('party_criada_sucesso', (party) => {
+            currentParty = party;
+            renderizarSalaParty();
+        });
         socket.on('lista_salas_boss', (salas) => {
             let container = document.getElementById("publicPartiesList");
             if (!salas.length) {
