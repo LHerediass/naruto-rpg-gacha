@@ -1,0 +1,1995 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naruto RPG - Portal Shinobi Online</title>
+    <!-- Fontes do Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Socket.io Client -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    
+    <style>
+        :root {
+            --chakra-orange: #ea580c;
+            --gold-accent: #f59e0b;
+            --ruby-red: #ef4444;
+            --jutsu-blue: #38bdf8;
+            --ur-purple: #c084fc;
+            --dark-bg: #0c0805;
+            --panel-bg: rgba(24, 12, 5, 0.92);
+            --panel-border: #523118;
+            --font-title: 'Cinzel', serif;
+            --font-body: 'Outfit', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            font-family: var(--font-body);
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(234, 88, 12, 0.12) 0%, transparent 60%),
+                linear-gradient(180deg, rgba(12, 8, 5, 0.85) 0%, rgba(12, 8, 5, 0.98) 100%),
+                url('https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=1920&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #ffebad;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+
+        /* AUTH OVERLAY */
+        #authScreen {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 5, 2, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            backdrop-filter: blur(8px);
+        }
+
+        .auth-card {
+            background: linear-gradient(180deg, #2b180a 0%, #170b04 100%);
+            border: 3px solid var(--gold-accent);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 20px rgba(245, 158, 11, 0.2);
+            text-align: center;
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--panel-border);
+        }
+
+        .auth-tab {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            padding: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.3s;
+        }
+
+        .auth-tab.active {
+            color: var(--gold-accent);
+            border-bottom: 3px solid var(--chakra-orange);
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 12px 14px;
+            margin: 10px 0;
+            background: #140a03;
+            border: 2px solid var(--panel-border);
+            border-radius: 8px;
+            color: #fef08a;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .auth-input:focus {
+            border-color: var(--gold-accent);
+        }
+
+        /* CONTAINER DASHBOARD */
+        .dashboard-container {
+            width: 100%;
+            max-width: 1050px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            z-index: 1;
+        }
+
+        /* TOP BAR */
+        .top-user-bar {
+            background: linear-gradient(135deg, rgba(20, 10, 3, 0.95) 0%, rgba(35, 18, 7, 0.95) 100%);
+            border: 2px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.6);
+            backdrop-filter: blur(6px);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .level-badge {
+            background: linear-gradient(135deg, var(--chakra-orange), var(--ruby-red));
+            color: #fff;
+            font-weight: 800;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            border: 2px solid var(--gold-accent);
+            box-shadow: 0 0 10px rgba(234, 88, 12, 0.5);
+        }
+
+        .currencies {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .curr-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        /* BANNER EVENTO */
+        .banner-box {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(90deg, rgba(12, 8, 5, 0.92) 0%, rgba(47, 25, 10, 0.75) 50%, rgba(13, 6, 2, 0.9) 100%),
+                        url('https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1200&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            border: 2px solid #855223;
+            border-radius: 14px;
+            padding: 24px;
+            position: relative;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .event-badge {
+            background: var(--ruby-red);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            width: fit-content;
+            margin-bottom: 6px;
+        }
+
+        .banner-title {
+            font-family: var(--font-title);
+            font-size: 2rem;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 12px #000, 0 0 20px var(--chakra-orange);
+            margin-bottom: 4px;
+        }
+
+        .banner-sub {
+            color: #cbd5e1;
+            font-size: 0.85rem;
+            max-width: 500px;
+            margin-bottom: 14px;
+        }
+
+        /* NAVEGAÇÃO ABAS */
+        .tab-menu {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            flex: 1;
+            background: rgba(28, 14, 5, 0.85);
+            border: 2px solid var(--panel-border);
+            border-radius: 10px;
+            color: #d97706;
+            padding: 10px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: 0.25s;
+        }
+
+        .nav-btn:hover {
+            color: #fff;
+            background: rgba(234, 88, 12, 0.2);
+        }
+
+        .nav-btn.active {
+            background: linear-gradient(180deg, #7c2d12 0%, #451a03 100%);
+            border-color: var(--gold-accent);
+            color: #fef08a;
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+        }
+
+        /* PAINEL PRINCIPAL */
+        .content-panel {
+            background: var(--panel-bg);
+            border: 2px solid var(--panel-border);
+            border-radius: 14px;
+            padding: 20px;
+            min-height: 380px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+        }
+
+        .tab-page { display: none; }
+        .tab-page.active { display: block; }
+
+        /* PORTAL GACHA */
+        .gacha-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .gacha-title {
+            color: var(--gold-accent);
+            font-family: var(--font-title);
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .btn-ninja {
+            background: linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%);
+            color: #fef08a;
+            border: 1px solid var(--gold-accent);
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.88rem;
+            text-shadow: 0 1px 2px #000;
+        }
+
+        .btn-ninja:hover {
+            filter: brightness(1.15);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(234, 88, 12, 0.4);
+        }
+
+        .btn-gold {
+            background: linear-gradient(180deg, #ea580c 0%, #9a3412 100%);
+            border-color: #fef08a;
+        }
+
+        /* CARDS E GRID */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 14px;
+            margin-top: 10px;
+        }
+
+        .character-card {
+            background: linear-gradient(180deg, #2b180a 0%, #170b04 100%);
+            border: 2px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .character-card:hover { transform: translateY(-4px); }
+
+        .character-card.rarity-UR {
+            border-color: var(--ur-purple);
+            box-shadow: 0 0 20px rgba(192, 132, 252, 0.8), inset 0 0 10px rgba(192, 132, 252, 0.4);
+            background: linear-gradient(180deg, #3b1158 0%, #170b04 100%);
+        }
+
+        .character-card.rarity-SSR {
+            border-color: var(--gold-accent);
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+        }
+
+        .character-card.rarity-SR {
+            border-color: #a855f7;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+        }
+
+        .character-card.rarity-R { border-color: #38bdf8; }
+
+        .character-card.selected-team {
+            border-color: #38bdf8 !important;
+            box-shadow: 0 0 18px rgba(56, 189, 248, 0.8) !important;
+        }
+
+        .dup-badge {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: #0284c7;
+            color: #fff;
+            font-size: 0.6rem;
+            padding: 1px 5px;
+            font-weight: 800;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        /* SLOTS DE EQUIPAMENTO */
+        .equip-slots-container {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 8px 0;
+            width: 100%;
+        }
+
+        .equip-slot-box {
+            width: 44px;
+            height: 44px;
+            background: #140a03;
+            border: 1px dashed var(--gold-accent);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .equip-slot-box:hover {
+            border-color: var(--chakra-orange);
+            background: #251206;
+        }
+
+        .equip-slot-box.filled {
+            border-style: solid;
+            border-color: var(--gold-accent);
+            background: rgba(245, 158, 11, 0.15);
+        }
+
+        .equip-slot-box i {
+            font-size: 1.1rem;
+            color: #64748b;
+        }
+
+        .equip-slot-box.filled i {
+            color: var(--gold-accent);
+        }
+
+        .equip-slot-label {
+            font-size: 0.55rem;
+            color: #94a3b8;
+            margin-top: 2px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .equip-slot-remove {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--ruby-red);
+            color: #fff;
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            font-size: 0.55rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+        }
+
+        /* AVATAR COM FALLBACK */
+        .avatar-container {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            border: 2px solid var(--gold-accent);
+            background: #140a03;
+            margin: 6px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .rarity-UR .avatar-container {
+            border-color: var(--ur-purple);
+            box-shadow: 0 0 10px var(--ur-purple);
+        }
+
+        .avatar-img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-fallback {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #451a03, #1c0e05);
+            color: var(--gold-accent);
+        }
+        .avatar-fallback i { font-size: 1.8rem; }
+
+        .stats-ficha {
+            background: #100703;
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 8px;
+            width: 100%;
+            font-size: 0.74rem;
+            text-align: left;
+            margin-top: 8px;
+            color: #cbd5e1;
+        }
+        .stats-ficha div { margin-bottom: 2px; }
+
+        .passiva-box {
+            background: #231207;
+            border: 1px dashed var(--gold-accent);
+            border-radius: 6px;
+            padding: 6px;
+            margin-top: 6px;
+            font-size: 0.72rem;
+            color: #fef08a;
+            line-height: 1.25;
+            text-align: left;
+            width: 100%;
+        }
+
+        /* SINERGIAS */
+        .synergy-panel {
+            background: linear-gradient(135deg, #1f0f06 0%, #2b180a 100%);
+            border: 1px solid var(--gold-accent);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 14px;
+        }
+
+        .synergy-badge {
+            background: rgba(234, 88, 12, 0.2);
+            color: #fef08a;
+            border: 1px solid var(--chakra-orange);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            display: inline-block;
+            margin: 3px 3px 0 0;
+        }
+
+        /* ARENA */
+        .battle-arena {
+            display: flex;
+            justify-content: space-between;
+            background: #0d0603;
+            border: 2px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 16px;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .team-col {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 44%;
+        }
+
+        .fighter-box {
+            background: #1f0f06;
+            border: 2px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .fighter-box.active-turn {
+            border-color: var(--gold-accent);
+            box-shadow: 0 0 14px var(--gold-accent);
+            background: #2e170a;
+        }
+
+        .fighter-box.enemy-targetable { cursor: pointer; border-color: var(--ruby-red); }
+        .fighter-box.enemy-targetable:hover { box-shadow: 0 0 10px var(--ruby-red); }
+
+        .fighter-box.selected-target {
+            border-color: #f59e0b !important;
+            background: #3d1c08 !important;
+            box-shadow: 0 0 16px #f59e0b !important;
+        }
+
+        .fighter-box.dead { opacity: 0.35; filter: grayscale(1); }
+
+        .hp-bar-bg {
+            background: #000;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 4px;
+            width: 100%;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .hp-bar-fill { background: var(--ruby-red); height: 100%; transition: width 0.3s ease; }
+
+        .battle-log {
+            background: #000;
+            border: 1px solid var(--panel-border);
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-size: 0.82rem;
+            height: 120px;
+            overflow-y: auto;
+            color: #f59e0b;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        /* MODO CAMPANHA E LISTAS */
+        .campaign-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #140a03;
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 12px 18px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .episode-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 320px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .episode-item {
+            background: linear-gradient(90deg, #1f0f06 0%, #2b180a 100%);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.2s;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .episode-item:hover { border-color: var(--gold-accent); }
+
+        /* TABELA RANKING PVP */
+        .ranking-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            background: #140a03;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--panel-border);
+        }
+
+        .ranking-table th, .ranking-table td {
+            padding: 12px;
+            text-align: left;
+            font-size: 0.88rem;
+            border-bottom: 1px solid rgba(245, 158, 11, 0.1);
+        }
+
+        .ranking-table th {
+            background: #2b180a;
+            color: var(--gold-accent);
+            font-family: var(--font-title);
+            font-weight: 700;
+        }
+
+        .ranking-table tr:hover {
+            background: rgba(234, 88, 12, 0.1);
+        }
+
+        .ranking-table tr.top1 {
+            background: rgba(245, 158, 11, 0.15);
+            font-weight: bold;
+        }
+
+        /* PARTY & BOSS RAID */
+        .party-box {
+            background: #140a03;
+            border: 2px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+        .party-slot {
+            background: #1f0f06;
+            border: 1px dashed var(--gold-accent);
+            border-radius: 8px;
+            padding: 10px;
+            margin: 6px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .battle-arena { flex-direction: column; gap: 15px; }
+            .team-col { width: 100%; }
+            .banner-title { font-size: 1.5rem; }
+            .tab-menu { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE LOGIN / REGISTRO -->
+    <div id="authScreen">
+        <div class="auth-card">
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthMode('login', this)">Entrar</button>
+                <button class="auth-tab" onclick="switchAuthMode('register', this)">Criar Conta</button>
+            </div>
+            <h2 id="authTitle" style="color: var(--gold-accent); margin-top: 0; font-family: var(--font-title);">Login de Shinobi</h2>
+            <input type="text" id="authUsername" class="auth-input" placeholder="Nome de Usuário">
+            <input type="password" id="authPassword" class="auth-input" placeholder="Senha">
+            <button class="btn-ninja btn-gold" style="width: 100%; padding: 12px; margin-top: 10px; justify-content: center;" onclick="realizarAutenticacao()">
+                <i class="fa-solid fa-torii-gate"></i> Acessar Aldeia
+            </button>
+            <p id="authMsg" style="color: var(--ruby-red); font-size: 0.85rem; margin-top: 12px;"></p>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        
+        <!-- TOP BAR (SEM O BOTÃO OBTER GEMAS GRÁTIS) -->
+        <header class="top-user-bar">
+            <div class="user-info">
+                <div class="level-badge" id="userLevelBadge">1</div>
+                <div>
+                    <span style="font-weight: 800; color: #fff;" id="currentUserDisplay">Ninja Rookie</span>
+                    <div style="font-size: 0.72rem; color: #94a3b8;">Status: Conectado ao Servidor</div>
+                </div>
+            </div>
+            <div class="currencies">
+                <div class="curr-item" style="color: #38bdf8;"><i class="fa-solid fa-gem"></i> <span id="gems">500</span></div>
+                <div class="curr-item" style="color: var(--gold-accent);"><i class="fa-solid fa-coins"></i> 5,000</div>
+                <button class="btn-ninja" style="font-size: 0.75rem; padding: 4px 10px;" onclick="fazerLogout()">
+                    <i class="fa-solid fa-right-from-bracket"></i> Sair
+                </button>
+            </div>
+        </header>
+
+        <!-- BANNER DE EVENTO -->
+        <section class="banner-box">
+            <span class="event-badge"><i class="fa-solid fa-trophy"></i> Arena Ranqueada</span>
+            <div class="banner-title">PVP RANQUEADO & ELO AKATSUKI</div>
+            <div class="banner-sub">Enfrente ninjas reais do mesmo elo em combates 3v3 e busque o Rank 1 do Mundo Ninja!</div>
+            <button class="btn-ninja btn-gold" style="width: fit-content; padding: 10px 20px;" onclick="switchTab('pvpTab', document.querySelectorAll('.nav-btn')[5])">
+                <i class="fa-solid fa-swords"></i> ARENA PVP
+            </button>
+        </section>
+
+        <!-- NAVEGAÇÃO DE ABAS -->
+        <nav class="tab-menu">
+            <button class="nav-btn active" onclick="switchTab('gachaTab', this)">
+                <i class="fa-solid fa-scroll"></i> Invocação
+            </button>
+            <button class="nav-btn" onclick="switchTab('teamTab', this)">
+                <i class="fa-solid fa-users"></i> Esquadrão
+            </button>
+            <button class="nav-btn" onclick="switchTab('inventoryTab', this)">
+                <i class="fa-solid fa-box-archive"></i> Inventário
+            </button>
+            <button class="nav-btn" onclick="switchTab('bossTab', this)">
+                <i class="fa-solid fa-skull-crossbones"></i> Boss Raid
+            </button>
+            <button class="nav-btn" onclick="switchTab('campaignTab', this)">
+                <i class="fa-solid fa-book-open"></i> Campanha
+            </button>
+            <button class="nav-btn" onclick="switchTab('pvpTab', this)">
+                <i class="fa-solid fa-swords"></i> PvP Ranqueado
+            </button>
+            <button class="nav-btn" onclick="switchTab('rankingTab', this)">
+                <i class="fa-solid fa-ranking-star"></i> Top 10 Rank
+            </button>
+        </nav>
+
+        <!-- PAINEL PRINCIPAL -->
+        <main class="content-panel">
+            
+            <!-- ABA 1: GACHA -->
+            <div id="gachaTab" class="tab-page active">
+                <div class="gacha-header">
+                    <div>
+                        <div class="gacha-title">PORTAL DE INVOCAÇÃO NINJA</div>
+                        <div style="font-size: 0.8rem; color: #94a3b8;">Taxa SSR fixa em exatos 1.5%. Duplicatas aprimoram seus atributos até virar UR!</div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-ninja" onclick="invocar(1)">RECRUTAR X1 (10 💎)</button>
+                        <button class="btn-ninja btn-gold" onclick="invocar(10)">RECRUTAR X10 (100 💎)</button>
+                    </div>
+                </div>
+                <div id="resultBox" style="text-align: center; color: #94a3b8; padding: 40px 20px; background: rgba(0,0,0,0.3); border-radius: 10px; border: 1px dashed var(--panel-border);">
+                    <i class="fa-solid fa-torii-gate" style="font-size: 3rem; color: var(--chakra-orange); margin-bottom: 12px;"></i>
+                    <p>Pressione um dos botões acima para realizar invocações de Shinobis!</p>
+                </div>
+            </div>
+
+            <!-- ABA 2: ESQUADRÃO & EQUIPAMENTO -->
+            <div id="teamTab" class="tab-page">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+                    <h3 style="color: var(--gold-accent); font-family: var(--font-title); margin: 0;">Seu Esquadrão (Até 3 Ninjas):</h3>
+                    <span style="font-size: 0.85rem; color: #38bdf8;" id="teamCountText">Selecionados: 0 / 3</span>
+                </div>
+                
+                <div id="synergyDisplayPanel" class="synergy-panel">
+                    <strong style="color: var(--gold-accent); font-size: 0.85rem;"><i class="fa-solid fa-link"></i> Sinergias de Equipe Ativas:</strong>
+                    <div id="synergyTagsContainer" style="margin-top: 6px;">
+                        <span style="font-size: 0.78rem; color: #94a3b8;">Nenhuma sinergia ativa no momento. Monte uma equipe específica (Equipe 7, Legado Uchiha ou Sannins).</span>
+                    </div>
+                </div>
+
+                <div id="inventoryGrid" class="cards-grid"></div>
+            </div>
+
+            <!-- ABA 3: INVENTÁRIO DE ITENS DROPADOS -->
+            <div id="inventoryTab" class="tab-page">
+                <h3 style="color: var(--gold-accent); font-family: var(--font-title); margin-bottom: 6px;"><i class="fa-solid fa-box-archive"></i> Inventário de Equipamentos (Drops de Boss)</h3>
+                <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 14px;">Estes equipamentos são obtidos ao derrotar os Bosses em Raid Co-op. Clique num item para equipá-lo no seu Shinobi selecionado.</div>
+                <div id="equipmentInventoryGrid" class="cards-grid"></div>
+            </div>
+
+            <!-- ABA 4: BOSS RAID (CO-OP MULTIPLAYER) -->
+            <div id="bossTab" class="tab-page">
+                <div id="bossLobbyView">
+                    <div class="gacha-header">
+                        <div>
+                            <div class="gacha-title"><i class="fa-solid fa-skull"></i> SALAS DE BOSS RAID (CO-OP)</div>
+                            <div style="font-size: 0.8rem; color: #94a3b8;">Reúna até 3 players (1 Shinobi cada) para enfrentar Bosses difíceis! Dropam Cristais e Equipamentos raros.</div>
+                        </div>
+                        <button class="btn-ninja btn-gold" onclick="abrirCriarPartyModal()"><i class="fa-solid fa-plus"></i> Criar Nova Party</button>
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <h4 style="color: #fef08a; margin-bottom: 8px;">Partys Abertas Disponíveis:</h4>
+                        <div id="publicPartiesList" style="display: flex; flex-direction: column; gap: 8px;">
+                            <p style="color: #94a3b8; font-size: 0.88rem;">Nenhuma party aberta no momento. Crie a sua própria sala!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SALA DE ESPERA DA PARTY -->
+                <div id="partyRoomView" style="display: none;">
+                    <div class="campaign-header">
+                        <div>
+                            <h3 id="roomTitleDisplay" style="color: var(--gold-accent); font-family: var(--font-title); margin: 0;"></h3>
+                            <div id="roomBossInfo" style="font-size: 0.82rem; color: #cbd5e1; margin-top: 4px;"></div>
+                        </div>
+                        <button class="btn-ninja" style="font-size: 0.75rem; padding: 6px 12px;" onclick="sairDaParty()">Sair da Sala</button>
+                    </div>
+
+                    <div class="party-box">
+                        <h4 style="color: var(--gold-accent); margin-bottom: 10px;"><i class="fa-solid fa-users"></i> Membros da Party (Máx 3 Players):</h4>
+                        <div id="roomMembersContainer"></div>
+                    </div>
+
+                    <div style="background: #100703; border: 1px solid var(--panel-border); border-radius: 10px; padding: 14px; margin-bottom: 14px;">
+                        <h4 style="color: #38bdf8; margin-bottom: 8px;">Escolha 1 Shinobi seu para a Batalha:</h4>
+                        <div id="partyShinobiSelector" style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                        <button id="btnReadyParty" class="btn-ninja" onclick="alternarProntoParty()"><i class="fa-solid fa-check"></i> Confirmar Shinobi (Pronto)</button>
+                        <button id="btnStartBossBattle" class="btn-ninja btn-gold" style="display:none;" onclick="liderIniciarBossRaid()"><i class="fa-solid fa-fire"></i> INICIAR BATALHA DO BOSS</button>
+                    </div>
+                </div>
+
+                <!-- TELA DE BATALHA DO BOSS -->
+                <div id="bossBattleDisplay" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 id="bossBattleTitle" style="color: var(--ruby-red); font-family: var(--font-title); margin:0;"></h4>
+                        <button class="btn-ninja" style="font-size: 0.75rem; padding: 4px 10px;" onclick="abandonarBossRaid()">Abandonar</button>
+                    </div>
+                    <p id="bossTargetInstruction" style="color: #38bdf8; font-weight: 700; text-align: center; margin-bottom: 8px; font-size: 0.95rem;"></p>
+                    <div class="battle-arena">
+                        <div class="team-col" id="bossPlayerTeamContainer"></div>
+                        <div style="display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; color: var(--ruby-red); font-family: var(--font-title);">VS</div>
+                        <div class="team-col" id="bossEnemyContainer"></div>
+                    </div>
+
+                    <div id="bossActionControls" style="display: none; gap: 10px; margin-top: 14px; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn-ninja" onclick="executarTurnoBoss('basico')"><i class="fa-solid fa-hand-fist"></i> Ataque Físico (0 CE)</button>
+                        <button class="btn-ninja btn-gold" onclick="executarTurnoBoss('skill1')"><i class="fa-solid fa-bolt"></i> Jutsu Principal (40 CE)</button>
+                        <button class="btn-ninja" style="background: linear-gradient(180deg, #ea580c 0%, #c2410c 100%);" onclick="executarTurnoBoss('ult')"><i class="fa-solid fa-fire"></i> Jutsu Supremo (80 CE)</button>
+                    </div>
+
+                    <div id="bossBattleLog" class="battle-log"></div>
+                </div>
+            </div>
+
+            <!-- ABA 5: MODO CAMPANHA -->
+            <div id="campaignTab" class="tab-page">
+                <div id="campaignMap">
+                    <div class="campaign-header">
+                        <div>
+                            <h3 style="color: var(--gold-accent); font-family: var(--font-title); margin: 0;">Naruto Shippuden: Modo Campanha</h3>
+                            <div style="font-size: 0.82rem; color: #cbd5e1; margin-top: 4px;">Combates 3 vs 3. Dificuldade aumenta a cada 10 episódios. Recompensa: 5 Cristais por vitória.</div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.5); padding: 6px 14px; border-radius: 8px; border: 1px solid var(--gold-accent); font-weight: 700; font-size: 0.9rem;">
+                            Progresso: <span id="progressText" style="color: var(--gold-accent);">Episódio 1 / 500</span>
+                        </div>
+                    </div>
+                    <div id="episodeList" class="episode-list"></div>
+                </div>
+
+                <!-- TELA DE BATALHA DA CAMPANHA -->
+                <div id="campaignBattleDisplay" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 id="battleEpisodeTitle" style="color: var(--gold-accent); font-family: var(--font-title); margin:0;"></h4>
+                        <button class="btn-ninja" style="font-size: 0.75rem; padding: 4px 10px;" onclick="abandonarCampanha()">Abandonar</button>
+                    </div>
+                    <p id="targetInstruction" style="color: #38bdf8; font-weight: 700; text-align: center; margin-bottom: 8px; font-size: 0.95rem;"></p>
+                    <div class="battle-arena">
+                        <div class="team-col" id="playerTeamContainer"></div>
+                        <div style="display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; color: var(--ruby-red); font-family: var(--font-title);">VS</div>
+                        <div class="team-col" id="enemyTeamContainer"></div>
+                    </div>
+
+                    <div id="actionControls" style="display: none; gap: 10px; margin-top: 14px; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn-ninja" onclick="executarTurno('basico')"><i class="fa-solid fa-hand-fist"></i> Ataque Físico (0 CE)</button>
+                        <button class="btn-ninja btn-gold" onclick="executarTurno('skill1')"><i class="fa-solid fa-bolt"></i> Jutsu Principal (40 CE)</button>
+                        <button class="btn-ninja" style="background: linear-gradient(180deg, #ea580c 0%, #c2410c 100%);" onclick="executarTurno('ult')"><i class="fa-solid fa-fire"></i> Jutsu Supremo (80 CE)</button>
+                    </div>
+
+                    <div id="battleLog" class="battle-log"></div>
+                </div>
+            </div>
+
+            <!-- ABA 6: PVP RANQUEADO -->
+            <div id="pvpTab" class="tab-page">
+                <div id="pvpLobbyView">
+                    <div class="campaign-header">
+                        <div>
+                            <h3 style="color: var(--gold-accent); font-family: var(--font-title); margin: 0;">Arena PvP Ranqueada 3v3 Online</h3>
+                            <div style="font-size: 0.82rem; color: #cbd5e1; margin-top: 4px;">Enfrente jogadores reais online do mesmo Elo. Vitória = +10 pontos.</div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(20, 10, 3, 0.8); border: 2px solid var(--panel-border); border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 20px;">
+                        <div style="font-size: 0.9rem; color: #94a3b8;">Seu Elo Atual:</div>
+                        <div id="pvpEloDisplay" style="font-size: 2.2rem; font-family: var(--font-title); font-weight: 900; color: var(--gold-accent); margin: 6px 0;">Estudante</div>
+                        <div style="font-size: 1.1rem; color: #fff; font-weight: 700;">Pontuação: <span id="pvpPointsDisplay" style="color: #38bdf8;">0</span> pts</div>
+                        <div style="font-size: 0.85rem; color: #cbd5e1; margin-top: 4px;">Sequência de Vitórias (Streak): <strong id="pvpStreakDisplay" style="color: var(--ruby-red);">0</strong></div>
+                        <div id="pvpNextRankText" style="font-size: 0.78rem; color: #94a3b8; margin-top: 8px;">Próximo Elo: Genin (100 pts)</div>
+
+                        <div style="margin-top: 20px;">
+                            <button id="btnBuscarPvp" class="btn-ninja btn-gold" style="padding: 12px 28px; font-size: 1rem;" onclick="buscarPartidaPvp()">
+                                <i class="fa-solid fa-swords"></i> BUSCAR PARTIDA PVP
+                            </button>
+                            <button id="btnCancelarPvp" class="btn-ninja" style="padding: 12px 28px; font-size: 1rem; background: #7f1d1d; display: none;" onclick="cancelarBuscaPvp()">
+                                <i class="fa-solid fa-xmark"></i> CANCELAR BUSCA
+                            </button>
+                        </div>
+                        <div id="pvpSearchStatus" style="font-size: 0.85rem; color: var(--gold-accent); margin-top: 10px; min-height: 20px;"></div>
+                    </div>
+
+                    <div style="background: #100703; border: 1px solid var(--panel-border); border-radius: 10px; padding: 14px;">
+                        <h4 style="color: var(--gold-accent); margin-bottom: 8px;"><i class="fa-solid fa-scroll"></i> Regras das Patentes (Elos):</h4>
+                        <ul style="font-size: 0.82rem; color: #cbd5e1; padding-left: 20px; display: flex; flex-direction: column; gap: 4px;">
+                            <li><strong>Estudante:</strong> 0 pontos (Elo Inicial)</li>
+                            <li><strong>Genin:</strong> 100 pontos</li>
+                            <li><strong>Chunin:</strong> 300 pontos</li>
+                            <li><strong>Jounin:</strong> 500 pontos</li>
+                            <li><strong>Anbu:</strong> 1000 pontos</li>
+                            <li><strong>Kage:</strong> 2000 pontos</li>
+                            <li><strong>Akatsuki:</strong> 2000 pontos + 10 Vitórias Consecutivas</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- TELA DE BATALHA PVP -->
+                <div id="pvpBattleDisplay" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 id="pvpBattleTitle" style="color: var(--gold-accent); font-family: var(--font-title); margin:0;">Batalha PvP Ranqueada</h4>
+                        <button class="btn-ninja" style="font-size: 0.75rem; padding: 4px 10px;" onclick="renderPvpLobby()">Render-se</button>
+                    </div>
+                    <p id="pvpTargetInstruction" style="color: #38bdf8; font-weight: 700; text-align: center; margin-bottom: 8px; font-size: 0.95rem;"></p>
+                    <div class="battle-arena">
+                        <div class="team-col" id="pvpPlayerTeamContainer"></div>
+                        <div style="display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; color: var(--ruby-red); font-family: var(--font-title);">VS</div>
+                        <div class="team-col" id="pvpEnemyTeamContainer"></div>
+                    </div>
+
+                    <div id="pvpActionControls" style="display: none; gap: 10px; margin-top: 14px; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn-ninja" onclick="executarTurnoPvp('basico')"><i class="fa-solid fa-hand-fist"></i> Ataque Físico (0 CE)</button>
+                        <button class="btn-ninja btn-gold" onclick="executarTurnoPvp('skill1')"><i class="fa-solid fa-bolt"></i> Jutsu Principal (40 CE)</button>
+                        <button class="btn-ninja" style="background: linear-gradient(180deg, #ea580c 0%, #c2410c 100%);" onclick="executarTurnoPvp('ult')"><i class="fa-solid fa-fire"></i> Jutsu Supremo (80 CE)</button>
+                    </div>
+
+                    <div id="pvpBattleLog" class="battle-log"></div>
+                </div>
+            </div>
+
+            <!-- ABA 7: RANKING TOP 10 -->
+            <div id="rankingTab" class="tab-page">
+                <div class="campaign-header">
+                    <div>
+                        <h3 style="color: var(--gold-accent); font-family: var(--font-title); margin: 0;"><i class="fa-solid fa-ranking-star"></i> Hall da Fama Ninja (Top 10 Rank PvP Global)</h3>
+                        <div style="font-size: 0.82rem; color: #cbd5e1; margin-top: 4px;">Os ninjas mais poderosos do mundo shinobi ranqueados no servidor.</div>
+                    </div>
+                    <button class="btn-ninja btn-gold" onclick="renderRankingTable()"><i class="fa-solid fa-rotate"></i> Atualizar Tabela</button>
+                </div>
+
+                <table class="ranking-table">
+                    <thead>
+                        <tr>
+                            <th>Posição</th>
+                            <th>Shinobi</th>
+                            <th>Elo (Patente)</th>
+                            <th>Pontos PvP</th>
+                            <th>Sequência (Streak)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rankingTableBody">
+                        <!-- Renderizado via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MODAL CRIAR PARTY -->
+    <div id="modalCriarParty" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:11000; justify-content:center; align-items:center;">
+        <div style="background:#2b180a; border:2px solid var(--gold-accent); border-radius:12px; padding:24px; width:90%; max-width:380px;">
+            <h3 style="color:var(--gold-accent); font-family:var(--font-title); margin-bottom:12px;">Criar Sala de Party Co-op</h3>
+            <label style="font-size:0.82rem; color:#cbd5e1;">Nome da Party:</label>
+            <input type="text" id="inputPartyName" class="auth-input" placeholder="Ex: Esquadrão Kage em Ação">
+            <label style="font-size:0.82rem; color:#cbd5e1; margin-top:8px; display:block;">Selecionar Boss:</label>
+            <select id="selectBossType" class="auth-input">
+                <option value="kurama">Raid Boss: Kurama (A Besta de Nove Caudas)</option>
+                <option value="madara">Raid Boss: Susanoo Perfeito de Madara</option>
+            </select>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn-ninja btn-gold" style="flex:1; justify-content:center;" onclick="confirmarCriarParty()">Criar Sala</button>
+                <button class="btn-ninja" style="flex:1; justify-content:center; background:#7f1d1d;" onclick="fecharCriarPartyModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EQUIPAR ITEM -->
+    <div id="modalEquipItem" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:11000; justify-content:center; align-items:center;">
+        <div style="background:#2b180a; border:2px solid var(--gold-accent); border-radius:12px; padding:24px; width:90%; max-width:400px; text-align:center;">
+            <h3 id="modalEquipTitle" style="color:var(--gold-accent); font-family:var(--font-title); margin-bottom:10px;">Equipar Item</h3>
+            <p style="font-size:0.82rem; color:#cbd5e1; margin-bottom:12px;">Selecione qual dos seus Shinobis vai receber este equipamento:</p>
+            <div id="modalShinobisList" style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto; margin-bottom:14px;"></div>
+            <button class="btn-ninja" style="background:#7f1d1d; width:100%; justify-content:center;" onclick="fecharModalEquip()">Fechar</button>
+        </div>
+    </div>
+
+    <script>
+        // CONEXÃO COM O SERVIDOR (Ajuste esta URL quando hospedar o backend)
+        const SERVER_URL = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://seu-servidor-backend.onrender.com';
+        const socket = io(SERVER_URL);
+
+        // CONFIGURAÇÃO DOS DROP DE EQUIPAMENTOS DE BOSS
+        const CATALOGO_EQUIPAMENTOS = {
+            bandana_normal: { nome: "Bandana Normal", tipo: "cabeca", icon: "fa-headband", desc: "+5% de Vida", chance: 0.80, stats: { hpPct: 0.05 } },
+            bandana_elite: { nome: "Bandana Elite", tipo: "cabeca", icon: "fa-headband", desc: "+10% de Vida", chance: 0.18, stats: { hpPct: 0.10 } },
+            bandana_lendaria: { nome: "Bandana Lendária", tipo: "cabeca", icon: "fa-headband", desc: "+20% de Vida", chance: 0.02, stats: { hpPct: 0.20 } },
+            jaqueta_genin: { nome: "Jaqueta Genin", tipo: "corpo", icon: "fa-shirt", desc: "+5% de Chakra", chance: 0.80, stats: { cePct: 0.05 } },
+            jaqueta_chunnin: { nome: "Jaqueta Chunnin", tipo: "corpo", icon: "fa-shirt", desc: "+10% de Chakra", chance: 0.18, stats: { cePct: 0.10 } },
+            jaqueta_jounnin: { nome: "Jaqueta Jounnin", tipo: "corpo", icon: "fa-shirt", desc: "+20% de Chakra", chance: 0.02, stats: { cePct: 0.20 } },
+            kunai_normal: { nome: "Kunai Normal", tipo: "arma", icon: "fa-khanda", desc: "+5% de Dano", chance: 0.80, stats: { dmgPct: 0.05 } },
+            kunai_elite: { nome: "Kunai Elite", tipo: "arma", icon: "fa-khanda", desc: "+10% de Dano", chance: 0.18, stats: { dmgPct: 0.10 } },
+            kunai_lendaria: { nome: "Kunai Lendária", tipo: "arma", icon: "fa-khanda", desc: "+20% de Dano", chance: 0.02, stats: { dmgPct: 0.20 } },
+            chapeu_akatsuki: { nome: "Chapéu Akatsuki", tipo: "cabeca", icon: "fa-hat-cowboy", desc: "+10% Vida, +10% Chakra, +5% Velocidade", chance: 0.02, stats: { hpPct: 0.10, cePct: 0.10, velPct: 0.05 } },
+            roupao_akatsuki: { nome: "Roupão Akatsuki", tipo: "corpo", icon: "fa-vest", desc: "+20% Chakra, +20% Dano", chance: 0.02, stats: { cePct: 0.20, dmgPct: 0.20 } }
+        };
+
+        const BOSS_DATABASE = {
+            kurama: { name: "Kurama (Kyuubi)", hp: 4500, atk: 210, icon: "fa-paw", golpes: { basico: { nome: "Garra Esmagadora", dano: 140 }, skill1: { nome: "Bomba Bijuu", dano: 260 }, ult: { nome: "Rugido Cataclísmico", dano: 380 } } },
+            madara: { name: "Susanoo Perfeito de Madara", hp: 5500, atk: 250, icon: "fa-ghost", golpes: { basico: { nome: "Corte de Lâmina", dano: 160 }, skill1: { nome: "Yasaka Magatama", dano: 290 }, ult: { nome: "Corte Celestial", dano: 420 } } }
+        };
+
+        // ESTADO GLOBAL DA APLICAÇÃO
+        let currentUser = null;
+        let gems = 500;
+        let pvpPoints = 0;
+        let pvpStreak = 0;
+        let selectedTeamIds = [];
+        let myInventory = {}; 
+        let equipmentInventory = {}; 
+        let currentEpisode = 1;
+        const totalEpisodes = 500;
+        let isRegisterMode = false;
+        let itemParaEquiparId = null;
+
+        let currentParty = null; 
+        let searchTimer = 0;
+        let searchTimerInterval = null;
+
+        const CHAKRA_COSTS = { basico: 0, skill1: 40, ult: 80 };
+
+        const gachaPool = [
+            { 
+                id: "itachi", name: "Itachi Uchiha", rarity: "SSR", element: "Genjutsu", icon: "fa-crow",
+                image: "personagens/itachi.gif",
+                stats: { hp: 600, atk: 460, def: 170, vel: 138, critRate: 20, critDmg: 190, chakra: 260 },
+                golpes: { basico: { nome: "Golpe Uchiha", dano: 95 }, skill1: { nome: "Clone Explosivo", dano: 190 }, ult: { nome: "Tsukuyomi", dano: 340 } },
+                passivaNome: "Ilusão", passivaDesc: "Anula completamente o primeiro dano contra sua equipe."
+            },
+            { 
+                id: "rocklee", name: "Rock Lee", rarity: "SR", element: "Taijutsu", icon: "fa-shoe-prints",
+                image: "personagens/rocklee.jpg",
+                stats: { hp: 480, atk: 360, def: 150, vel: 128, critRate: 15, critDmg: 160, chakra: 160 },
+                golpes: { basico: { nome: "Soco", dano: 75 }, skill1: { nome: "Chute da Folha", dano: 145 }, ult: { nome: "Terceiro Portão", dano: 0, isBuff: true } },
+                passivaNome: "Lótus Primordial", passivaDesc: "Ganha prioridade absoluta de turno com o Terceiro Portão."
+            },
+            { 
+                id: "obitokid", name: "Obito Uchiha Kid", rarity: "R", element: "Ninjutsu", icon: "fa-glasses",
+                image: "personagens/obito.jpg",
+                stats: { hp: 460, atk: 290, def: 140, vel: 105, critRate: 10, critDmg: 140, chakra: 170 },
+                golpes: { basico: { nome: "Golpe de Kunai", dano: 55 }, skill1: { nome: "Katon Gokakyuu", dano: 115 }, ult: { nome: "Sharingan", dano: 0, isBuff: true } },
+                passivaNome: "Despertar Uchiha", passivaDesc: "Golpes críticos garantidos com Sharingan ativo."
+            },
+            { 
+                id: "kakashi", name: "Kakashi Hatake", rarity: "SSR", element: "Ninjutsu", icon: "fa-mask",
+                image: "personagens/kakashi.gif",
+                stats: { hp: 550, atk: 420, def: 180, vel: 140, critRate: 25, critDmg: 180, chakra: 220 },
+                golpes: { basico: { nome: "Corte Rápido", dano: 90 }, skill1: { nome: "Raikiri", dano: 180 }, ult: { nome: "Kamui", dano: 320 } },
+                passivaNome: "Olho de Cópia", passivaDesc: "Ganha +15% de Velocidade ao causar crítico."
+            },
+            { 
+                id: "sakura", name: "Sakura Haruno", rarity: "SSR", element: "Medical", icon: "fa-hand-holding-medical",
+                image: "personagens/sakura.gif",
+                stats: { hp: 650, atk: 380, def: 210, vel: 110, critRate: 15, critDmg: 150, chakra: 250 },
+                golpes: { basico: { nome: "Soco Brutal", dano: 80 }, skill1: { nome: "Impacto Flor", dano: 170 }, ult: { nome: "Byakugou", dano: 300 } },
+                passivaNome: "Força & Cura", passivaDesc: "Cura o aliado com menor HP no turno."
+            },
+            { 
+                id: "jiraiya", name: "Jiraiya Sannin", rarity: "SSR", element: "Ninjutsu", icon: "fa-frog",
+                image: "personagens/jiraiya.gif",
+                stats: { hp: 700, atk: 450, def: 190, vel: 125, critRate: 20, critDmg: 200, chakra: 300 },
+                golpes: { basico: { nome: "Cabelo Espinho", dano: 100 }, skill1: { nome: "Oodama Rasengan", dano: 200 }, ult: { nome: "Katon Dragão", dano: 360 } },
+                passivaNome: "Modo Sábio", passivaDesc: "Recupera +20 de Chakra por turno."
+            },
+            { 
+                id: "tsunade", name: "Tsunade Senju", rarity: "SSR", element: "Medical", icon: "fa-heart-pulse",
+                image: "personagens/tsunade.gif",
+                stats: { hp: 800, atk: 390, def: 240, vel: 100, critRate: 15, critDmg: 150, chakra: 280 },
+                golpes: { basico: { nome: "Chute Esmagador", dano: 85 }, skill1: { nome: "Cura Celular", dano: 160 }, ult: { nome: "Criação Rebirth", dano: 290 } },
+                passivaNome: "Regeneração Mitótica", passivaDesc: "Reduz dano sofrido por aliados em 15%."
+            },
+            { 
+                id: "naruto", name: "Naruto Uzumaki", rarity: "SR", element: "Taijutsu", icon: "fa-fire",
+                image: "personagens/naruto.jpg",
+                stats: { hp: 450, atk: 340, def: 140, vel: 130, critRate: 15, critDmg: 150, chakra: 180 },
+                golpes: { basico: { nome: "Combo Uzumaki", dano: 70 }, skill1: { nome: "Kage Bunshin", dano: 140 }, ult: { nome: "Rasengan", dano: 250 } },
+                passivaNome: "Vontade de Fogo", passivaDesc: "Aumenta ATK acumulativo ao sofrer dano."
+            },
+            { 
+                id: "sasuke", name: "Sasuke Uchiha", rarity: "SR", element: "Ninjutsu", icon: "fa-eye",
+                image: "personagens/sasuke.jpg",
+                stats: { hp: 420, atk: 370, def: 130, vel: 135, critRate: 20, critDmg: 170, chakra: 180 },
+                golpes: { basico: { nome: "Taijutsu Uchiha", dano: 75 }, skill1: { nome: "Goukakyuu", dano: 150 }, ult: { nome: "Chidori", dano: 270 } },
+                passivaNome: "Olho Afiado", passivaDesc: "Aumenta taxa crítica em +10%."
+            },
+            { 
+                id: "chouji", name: "Chouji Akimichi", rarity: "R", element: "Taijutsu", icon: "fa-shield-halved",
+                image: "personagens/chouji.jpg",
+                stats: { hp: 500, atk: 280, def: 200, vel: 90, critRate: 5, critDmg: 130, chakra: 150 },
+                golpes: { basico: { nome: "Tapa Pesado", dano: 50 }, skill1: { nome: "Nikudan Chusha", dano: 110 }, ult: { nome: "Baika no Jutsu", dano: 190 } },
+                passivaNome: "Corpo Robusto", passivaDesc: "Reduz dano básico recebido pela equipe em 20%."
+            }
+        ];
+
+        // ELO CALCULATOR
+        function calcularElo(pts, streak) {
+            if (pts >= 2000 && streak >= 10) return "Akatsuki";
+            if (pts >= 2000) return "Kage";
+            if (pts >= 1000) return "Anbu";
+            if (pts >= 500) return "Jounin";
+            if (pts >= 300) return "Chunin";
+            if (pts >= 100) return "Genin";
+            return "Estudante";
+        }
+
+        function verificarSinergiasEquipe(teamIds) {
+            let sinergiasAtivas = [];
+            let team7Membros = ['naruto', 'sasuke', 'sakura', 'kakashi'];
+            if (teamIds.filter(id => team7Membros.includes(id)).length >= 3) {
+                sinergiasAtivas.push({ nome: "Equipe 7 (+5% Dano)", tipo: "equipe7" });
+            }
+            let uchihaMembros = ['sasuke', 'itachi', 'obitokid'];
+            if (uchihaMembros.every(id => teamIds.includes(id))) {
+                sinergiasAtivas.push({ nome: "Legado Uchiha (+10% Velocidade)", tipo: "legadoUchiha" });
+            }
+            let sanninMembros = ['tsunade', 'jiraiya'];
+            if (sanninMembros.every(id => teamIds.includes(id))) {
+                sinergiasAtivas.push({ nome: "Sannins Lendários (+5% Vida e +5% Dano)", tipo: "sannins" });
+            }
+            return sinergiasAtivas;
+        }
+
+        function getCharacterStats(item, teamIds = []) {
+            let dups = item.dups || 0;
+            let mult = 1 + (dups * 0.15);
+            let base = gachaPool.find(c => c.id === item.id).stats;
+
+            let hpFinal = base.hp;
+            let ceFinal = base.chakra;
+            let velFinal = base.vel;
+            let dmgMult = 1.0;
+
+            if (item.slots) {
+                ['cabeca', 'corpo', 'arma'].forEach(slot => {
+                    let eqKey = item.slots[slot];
+                    if (eqKey && CATALOGO_EQUIPAMENTOS[eqKey]) {
+                        let stEq = CATALOGO_EQUIPAMENTOS[eqKey].stats;
+                        if (stEq.hpPct) hpFinal += base.hp * stEq.hpPct;
+                        if (stEq.cePct) ceFinal += base.chakra * stEq.cePct;
+                        if (stEq.velPct) velFinal += base.vel * stEq.velPct;
+                        if (stEq.dmgPct) dmgMult += stEq.dmgPct;
+                    }
+                });
+            }
+
+            let sinergias = verificarSinergiasEquipe(teamIds);
+            if (sinergias.some(s => s.tipo === 'legadoUchiha')) velFinal *= 1.10;
+            if (sinergias.some(s => s.tipo === 'sannins')) hpFinal *= 1.05;
+
+            return {
+                hp: Math.floor(hpFinal * mult),
+                atk: Math.floor(base.atk * mult * dmgMult),
+                def: Math.floor(base.def * mult),
+                vel: Math.floor(velFinal * mult),
+                critRate: base.critRate,
+                critDmg: base.critDmg,
+                chakra: Math.floor(ceFinal * mult)
+            };
+        }
+
+        function getCharacterRarity(item) {
+            let dups = item.dups || 0;
+            let baseRarity = gachaPool.find(c => c.id === item.id).rarity;
+            if (baseRarity === 'SSR' && dups >= 6) return 'UR';
+            return baseRarity;
+        }
+
+        function getAvatarHTML(char) {
+            return `
+                <div class="avatar-container">
+                    <img class="avatar-img" src="${char.image || ''}" alt="${char.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="avatar-fallback">
+                        <i class="fa-solid ${char.icon || 'fa-user-ninja'}"></i>
+                    </div>
+                </div>
+            `;
+        }
+
+        // AUTENTICAÇÃO COM SERVIDOR
+        function switchAuthMode(mode, btn) {
+            isRegisterMode = (mode === 'register');
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            document.getElementById('authTitle').innerText = isRegisterMode ? 'Criar Nova Conta' : 'Login de Shinobi';
+        }
+
+        async function realizarAutenticacao() {
+            const userInp = document.getElementById('authUsername');
+            const passInp = document.getElementById('authPassword');
+            const msg = document.getElementById('authMsg');
+            
+            const username = userInp.value.trim();
+            const password = passInp.value.trim();
+
+            if (!username || !password) { msg.innerText = "Preencha usuário e senha!"; return; }
+
+            const endpoint = isRegisterMode ? '/api/register' : '/api/login';
+            try {
+                const response = await fetch(SERVER_URL + endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+
+                if (!data.success) {
+                    msg.innerText = data.message;
+                    return;
+                }
+
+                if (isRegisterMode) {
+                    alert("Conta criada com sucesso! Faça seu login.");
+                    switchAuthMode('login', document.querySelectorAll('.auth-tab')[0]);
+                } else {
+                    currentUser = data.user.username;
+                    gems = data.user.gems;
+                    pvpPoints = data.user.pvpPoints;
+                    pvpStreak = data.user.pvpStreak;
+                    myInventory = data.user.inventory || {};
+                    equipmentInventory = data.user.equipmentInventory || {};
+                    selectedTeamIds = data.user.team || [];
+                    currentEpisode = data.user.currentEpisode || 1;
+
+                    document.getElementById('currentUserDisplay').innerText = currentUser;
+                    document.getElementById('authScreen').style.display = 'none';
+                    updateUI();
+                    renderInventory();
+                    renderEquipmentInventory();
+                }
+            } catch (err) {
+                msg.innerText = "Erro ao conectar com o servidor central.";
+            }
+        }
+
+        function fazerLogout() { 
+            salvarJogo(); 
+            currentUser = null; 
+            cancelarBuscaPvp();
+            document.getElementById('authScreen').style.display = 'flex'; 
+        }
+
+        async function salvarJogo() {
+            if (!currentUser) return;
+            const payload = {
+                username: currentUser,
+                data: {
+                    gems, pvpPoints, pvpStreak,
+                    inventory: myInventory,
+                    equipmentInventory,
+                    team: selectedTeamIds,
+                    currentEpisode
+                }
+            };
+            try {
+                await fetch(SERVER_URL + '/api/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } catch (err) {
+                console.error("Erro ao salvar jogo na nuvem:", err);
+            }
+        }
+
+        function updateUI() { 
+            document.getElementById("gems").innerText = gems; 
+            document.getElementById("teamCountText").innerText = `Selecionados: ${selectedTeamIds.length} / 3`;
+            renderPvpLobby();
+            salvarJogo(); 
+        }
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if (btn) btn.classList.add('active');
+            if (tabId === 'teamTab') renderInventory();
+            if (tabId === 'inventoryTab') renderEquipmentInventory();
+            if (tabId === 'campaignTab') renderCampaignMap();
+            if (tabId === 'bossTab') atualizarLobbyBoss();
+            if (tabId === 'pvpTab') renderPvpLobby();
+            if (tabId === 'rankingTab') renderRankingTable();
+        }
+
+        // GACHA
+        function invocar(qtd) {
+            if (gems < qtd * 10) { alert("Gemas insuficientes!"); return; }
+            gems -= qtd * 10;
+            let results = [];
+
+            for (let i = 0; i < qtd; i++) {
+                let char;
+                let roll = Math.random() * 100;
+                if (roll < 1.5) {
+                    let ssrs = gachaPool.filter(c => c.rarity === 'SSR');
+                    char = ssrs[Math.floor(Math.random() * ssrs.length)];
+                } else {
+                    let others = gachaPool.filter(c => c.rarity !== 'SSR');
+                    char = others[Math.floor(Math.random() * others.length)];
+                }
+
+                if (!myInventory[char.id]) {
+                    myInventory[char.id] = { id: char.id, dups: 0, slots: { cabeca: null, corpo: null, arma: null } };
+                } else if (myInventory[char.id].dups < 6) {
+                    myInventory[char.id].dups++;
+                }
+                results.push(char);
+            }
+
+            updateUI();
+            document.getElementById("resultBox").innerHTML = `
+                <div class="cards-grid">
+                    ${results.map(c => {
+                        let invItem = myInventory[c.id];
+                        let activeRarity = getCharacterRarity(invItem);
+                        return `
+                            <div class="character-card rarity-${activeRarity}">
+                                <span class="dup-badge">+${invItem.dups}/6</span>
+                                <strong style="color:${activeRarity === 'UR' ? 'var(--ur-purple)' : 'var(--gold-accent);'}">[${activeRarity}]</strong>
+                                ${getAvatarHTML(c)}
+                                <strong style="color:#fff;">${c.name}</strong>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function renderInventory() {
+            const grid = document.getElementById("inventoryGrid");
+            const tagsContainer = document.getElementById("synergyTagsContainer");
+            const ids = Object.keys(myInventory);
+
+            let sinergiasAtivas = verificarSinergiasEquipe(selectedTeamIds);
+            if (sinergiasAtivas.length > 0) {
+                tagsContainer.innerHTML = sinergiasAtivas.map(s => `<span class="synergy-badge"><i class="fa-solid fa-bolt"></i> ${s.nome}</span>`).join('');
+            } else {
+                tagsContainer.innerHTML = `<span style="font-size: 0.78rem; color: #94a3b8;">Nenhuma sinergia ativa no momento. Monte uma equipe específica (Equipe 7, Legado Uchiha ou Sannins).</span>`;
+            }
+
+            if (!ids.length) { 
+                grid.innerHTML = "<p style='color:#94a3b8; text-align:center; grid-column: 1/-1;'>Nenhum ninja recrutado ainda. Invoque no Portal!</p>"; 
+                updateUI();
+                return; 
+            }
+
+            const slotIcons = { cabeca: "fa-hat-wizard", corpo: "fa-shirt", arma: "fa-khanda" };
+
+            grid.innerHTML = ids.map(id => {
+                let item = myInventory[id];
+                if (!item.slots) item.slots = { cabeca: null, corpo: null, arma: null };
+                let baseData = gachaPool.find(c => c.id === id);
+                let isSel = selectedTeamIds.includes(id);
+                let st = getCharacterStats(item, selectedTeamIds);
+                let gl = baseData.golpes;
+                let activeRarity = getCharacterRarity(item);
+
+                let slotsHtml = ['cabeca', 'corpo', 'arma'].map(slotType => {
+                    let eqKey = item.slots[slotType];
+                    let eqInfo = eqKey ? CATALOGO_EQUIPAMENTOS[eqKey] : null;
+                    let iconClass = eqInfo ? (eqInfo.icon || slotIcons[slotType]) : slotIcons[slotType];
+
+                    return `
+                        <div class="equip-slot-box ${eqKey ? 'filled' : ''}" title="${eqInfo ? eqInfo.nome + ' (' + eqInfo.desc + ')' : 'Slot ' + slotType.toUpperCase() + ' Vazio'}" onclick="event.stopPropagation(); desequiparItem('${id}', '${slotType}')">
+                            <i class="fa-solid ${iconClass}"></i>
+                            <span class="equip-slot-label">${slotType.substring(0,3)}</span>
+                            ${eqKey ? `<span class="equip-slot-remove">×</span>` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="character-card rarity-${activeRarity} ${isSel ? 'selected-team' : ''}" onclick="toggleTeam('${id}')" style="cursor:pointer;">
+                        <span class="dup-badge">+${item.dups}/6</span>
+                        ${isSel ? '<span style="position:absolute; top:6px; right:6px; background:#38bdf8; color:#000; font-size:0.68rem; padding:2px 6px; font-weight:800; border-radius:4px;">EQUIPADO</span>' : ''}
+                        <strong style="color:${activeRarity === 'UR' ? 'var(--ur-purple)' : 'var(--gold-accent);'}">[${activeRarity}] ${baseData.name}</strong>
+                        ${getAvatarHTML(baseData)}
+                        <span style="font-size:0.75rem; color:#f59e0b; font-weight:700;">${baseData.element}</span>
+                        <div class="equip-slots-container">${slotsHtml}</div>
+                        <div class="stats-ficha">
+                            <div><strong>HP:</strong> ${st.hp} | <strong>Chakra:</strong> ${st.chakra}</div>
+                            <div><strong>Atk:</strong> ${st.atk} | <strong>Def:</strong> ${st.def} | <strong>Vel:</strong> <span style="color:#38bdf8">${st.vel}</span></div>
+                            <hr style="border-color:var(--panel-border); margin:4px 0;">
+                            <div>• <strong>Básico (${gl.basico.nome}):</strong> ${gl.basico.dano}d</div>
+                            <div>• <strong>Jutsu (${gl.skill1.nome}):</strong> ${gl.skill1.dano}d (40 CE)</div>
+                            <div>• <strong>Supremo (${gl.ult.nome}):</strong> ${gl.ult.dano > 0 ? gl.ult.dano + 'd' : 'Buff/Suporte'} (80 CE)</div>
+                            <div class="passiva-box"><strong>⚡ Passiva (${baseData.passivaNome}):</strong><br>${baseData.passivaDesc}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            updateUI();
+        }
+
+        function toggleTeam(id) {
+            if (selectedTeamIds.includes(id)) {
+                selectedTeamIds = selectedTeamIds.filter(i => i !== id);
+            } else if (selectedTeamIds.length < 3) {
+                selectedTeamIds.push(id);
+            } else {
+                alert("Você pode selecionar no máximo 3 Shinobis para a equipe!");
+            }
+            salvarJogo(); 
+            renderInventory();
+        }
+
+        function renderEquipmentInventory() {
+            const grid = document.getElementById("equipmentInventoryGrid");
+            const keys = Object.keys(equipmentInventory);
+
+            if (!keys.length) {
+                grid.innerHTML = "<p style='color:#94a3b8; text-align:center; grid-column: 1/-1;'>Nenhum equipamento dropado ainda. Derrote Bosses nas Raids Co-op!</p>";
+                return;
+            }
+
+            grid.innerHTML = keys.map(invKey => {
+                let item = equipmentInventory[invKey];
+                let info = CATALOGO_EQUIPAMENTOS[item.templateKey];
+                if (!info) return '';
+                return `
+                    <div class="character-card" style="border-color:var(--gold-accent); cursor:pointer;" onclick="abrirModalEquip('${invKey}')">
+                        <div class="avatar-container" style="background:#2b180a; color:var(--gold-accent);">
+                            <i class="fa-solid ${info.icon || 'fa-shield-halved'}" style="font-size:1.8rem;"></i>
+                        </div>
+                        <strong style="color:#fff; font-size:0.9rem;">${info.nome}</strong>
+                        <span style="font-size:0.72rem; color:#38bdf8;">Tipo: ${info.tipo.toUpperCase()}</span>
+                        <p style="font-size:0.75rem; color:#fef08a; margin-top:6px;">${info.desc}</p>
+                        <button class="btn-ninja btn-gold" style="font-size:0.7rem; padding:4px 10px; margin-top:8px;">Equipar</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function abrirModalEquip(invKey) {
+            itemParaEquiparId = invKey;
+            let item = equipmentInventory[invKey];
+            let info = CATALOGO_EQUIPAMENTOS[item.templateKey];
+            
+            document.getElementById("modalEquipTitle").innerText = `Equipar: ${info.nome}`;
+            let listDiv = document.getElementById("modalShinobisList");
+            let ninjaIds = Object.keys(myInventory);
+
+            if (!ninjaIds.length) {
+                listDiv.innerHTML = "<p style='color:#94a3b8; font-size:0.8rem;'>Você não possui ninjas recrutados.</p>";
+            } else {
+                listDiv.innerHTML = ninjaIds.map(nid => {
+                    let baseData = gachaPool.find(c => c.id === nid);
+                    return `
+                        <div style="background:#140a03; border:1px solid var(--panel-border); border-radius:6px; padding:8px; display:flex; justify-content:space-between; align-items:center;">
+                            <span style="color:#fff; font-weight:700;">${baseData.name}</span>
+                            <button class="btn-ninja btn-gold" style="font-size:0.7rem; padding:4px 10px;" onclick="atribuirItemAoShinobi('${nid}', '${info.tipo}')">Selecionar</button>
+                        </div>
+                    `;
+                }).join('');
+            }
+            document.getElementById("modalEquipItem").style.display = "flex";
+        }
+
+        function fecharModalEquip() {
+            document.getElementById("modalEquipItem").style.display = "none";
+            itemParaEquiparId = null;
+        }
+
+        function atribuirItemAoShinobi(shinobiId, tipoSlot) {
+            if (!itemParaEquiparId) return;
+            let item = equipmentInventory[itemParaEquiparId];
+            if (!myInventory[shinobiId].slots) myInventory[shinobiId].slots = { cabeca: null, corpo: null, arma: null };
+            
+            let itemAntigoKey = myInventory[shinobiId].slots[tipoSlot];
+            if (itemAntigoKey) {
+                let oldInvKey = 'eq_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+                equipmentInventory[oldInvKey] = { templateKey: itemAntigoKey };
+            }
+
+            myInventory[shinobiId].slots[tipoSlot] = item.templateKey;
+            delete equipmentInventory[itemParaEquiparId];
+            
+            salvarJogo();
+            fecharModalEquip();
+            renderEquipmentInventory();
+            renderInventory();
+            alert("Equipamento equipado com sucesso!");
+        }
+
+        function desequiparItem(shinobiId, slotType) {
+            let eqKey = myInventory[shinobiId].slots[slotType];
+            if (!eqKey) return;
+            
+            let newInvKey = 'eq_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+            equipmentInventory[newInvKey] = { templateKey: eqKey };
+            myInventory[shinobiId].slots[slotType] = null;
+            
+            salvarJogo();
+            renderInventory();
+            renderEquipmentInventory();
+        }
+
+        // CAMPANHA
+        function renderCampaignMap() {
+            document.getElementById("progressText").innerText = `Episódio ${currentEpisode} / ${totalEpisodes}`;
+            let list = document.getElementById("episodeList");
+            let html = "";
+            let startEp = Math.max(1, currentEpisode - 2);
+            let endEp = Math.min(totalEpisodes, startEp + 9);
+
+            for (let ep = startEp; ep <= endEp; ep++) {
+                let isCompleted = ep < currentEpisode;
+                let isCurrent = ep === currentEpisode;
+                let actionBtnHTML = '';
+                if (isCompleted) {
+                    actionBtnHTML = `<button class="btn-ninja" style="padding: 6px 14px; font-size: 0.8rem;" onclick="iniciarBatalhaCampanha(${ep})">Rejogar</button>`;
+                } else if (isCurrent) {
+                    actionBtnHTML = `<button class="btn-ninja btn-gold" style="padding: 6px 14px; font-size: 0.8rem;" onclick="iniciarBatalhaCampanha(${ep})">⚔️ Jogar Batalha</button>`;
+                }
+
+                html += `
+                    <div class="episode-item">
+                        <div>
+                            <strong style="color: ${isCurrent ? 'var(--gold-accent)' : '#fff'};">Episódio ${ep}: Shippuden Saga</strong>
+                            <div style="font-size: 0.75rem; color: #94a3b8;">Dificuldade: Nível ${Math.floor((ep - 1) / 10) + 1} | Recompensa: 5 Cristais</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            ${isCompleted ? '<span style="color:#4ade80; font-weight:700; font-size:0.85rem;"><i class="fa-solid fa-check"></i> Concluído</span>' : ''}
+                            ${actionBtnHTML}
+                        </div>
+                    </div>
+                `;
+            }
+            list.innerHTML = html;
+        }
+
+        let playerTeam = [], enemyTeam = [], turnQueue = [], currentQueueIdx = 0, activeFighter = null, selectedTargetUid = null;
+        let itachiShieldActive = false, activeCampaignEpisode = 1;
+
+        function iniciarBatalhaCampanha(ep) {
+            if (selectedTeamIds.length !== 3) { 
+                alert("Selecione exatamente 3 ninjas no seu Esquadrão antes de iniciar a campanha!"); 
+                switchTab('teamTab', document.querySelectorAll('.nav-btn')[1]);
+                return; 
+            }
+
+            activeCampaignEpisode = ep;
+            let sinergias = verificarSinergiasEquipe(selectedTeamIds);
+            let equipoDanoBonus = 1.0;
+            if (sinergias.some(s => s.tipo === 'equipe7')) equipoDanoBonus += 0.05;
+            if (sinergias.some(s => s.tipo === 'sannins')) equipoDanoBonus += 0.05;
+
+            playerTeam = selectedTeamIds.map((id, i) => {
+                let item = myInventory[id];
+                let baseData = gachaPool.find(c => c.id === id);
+                let st = getCharacterStats(item, selectedTeamIds);
+                return {
+                    ...baseData, ...item,
+                    uid: 'p_' + i, isPlayer: true,
+                    hp: st.hp, maxHp: st.hp, stats: st,
+                    ce: st.chakra, maxCe: st.chakra,
+                    bonusDanoMult: equipoDanoBonus
+                };
+            });
+
+            let dificuldadeMultiplier = 1 + (Math.floor((ep - 1) / 10) * 0.25);
+            enemyTeam = [
+                { uid: 'e_0', name: `Ninja Renegado A`, icon: "fa-user-ninja", image: "", isPlayer: false, hp: Math.floor(450 * dificuldadeMultiplier), maxHp: Math.floor(450 * dificuldadeMultiplier), ce: 150, maxCe: 150, stats: { vel: 120, atk: Math.floor(100 * dificuldadeMultiplier) }, golpes: { basico: { nome: "Golpe", dano: 50 }, skill1: { nome: "Kunai", dano: 90 }, ult: { nome: "Soco", dano: 150 } } },
+                { uid: 'e_1', name: `Ninja Renegado B`, icon: "fa-mask", image: "", isPlayer: false, hp: Math.floor(500 * dificuldadeMultiplier), maxHp: Math.floor(500 * dificuldadeMultiplier), ce: 180, maxCe: 180, stats: { vel: 135, atk: Math.floor(110 * dificuldadeMultiplier) }, golpes: { basico: { nome: "Shuriken", dano: 60 }, skill1: { nome: "Katon", dano: 100 }, ult: { nome: "Chamas", dano: 170 } } },
+                { uid: 'e_2', name: `Chefe Akatsuki`, icon: "fa-skull", image: "", isPlayer: false, hp: Math.floor(650 * dificuldadeMultiplier), maxHp: Math.floor(650 * dificuldadeMultiplier), ce: 200, maxCe: 200, stats: { vel: 105, atk: Math.floor(130 * dificuldadeMultiplier) }, golpes: { basico: { nome: "Ataque Pesado", dano: 70 }, skill1: { nome: "Jutsu Sombrio", dano: 120 }, ult: { nome: "Destruição", dano: 200 } } }
+            ];
+
+            itachiShieldActive = playerTeam.some(p => p.id === 'itachi');
+
+            document.getElementById("campaignMap").style.display = "none";
+            document.getElementById("campaignBattleDisplay").style.display = "block";
+            document.getElementById("battleEpisodeTitle").innerText = `Episódio ${ep}: Batalha 3 vs 3`;
+            document.getElementById("battleLog").innerHTML = `<div class="log-entry" style="color:var(--gold-accent);">⚔️ Batalha do Episódio ${ep} iniciada!</div>`;
+            
+            proximaRodadaCampanha();
+        }
+
+        function abandonarCampanha() {
+            document.getElementById("campaignMap").style.display = "block";
+            document.getElementById("campaignBattleDisplay").style.display = "none";
+            renderCampaignMap();
+        }
+
+        function proximaRodadaCampanha() {
+            let todos = [...playerTeam.filter(p => p.hp > 0), ...enemyTeam.filter(e => e.hp > 0)];
+            turnQueue = todos.sort((a, b) => b.stats.vel - a.stats.vel);
+            currentQueueIdx = 0;
+            executarProximoTurnoCampanha();
+        }
+
+        function executarProximoTurnoCampanha() {
+            if (!playerTeam.some(p => p.hp > 0)) { alert("Derrota na Campanha!"); abandonarCampanha(); return; }
+            if (!enemyTeam.some(e => e.hp > 0)) {
+                gems += 5;
+                if (activeCampaignEpisode === currentEpisode && currentEpisode < totalEpisodes) currentEpisode++;
+                updateUI();
+                alert(`Vitória no Episódio ${activeCampaignEpisode}! +5 Cristais.`);
+                abandonarCampanha();
+                return;
+            }
+            if (currentQueueIdx >= turnQueue.length) { proximaRodadaCampanha(); return; }
+
+            activeFighter = turnQueue[currentQueueIdx];
+            if (activeFighter.hp <= 0) { currentQueueIdx++; executarProximoTurnoCampanha(); return; }
+
+            selectedTargetUid = null;
+            renderArenaCampanha();
+
+            if (!activeFighter.isPlayer) {
+                document.getElementById("actionControls").style.display = "none";
+                document.getElementById("targetInstruction").innerText = `Turno de ${activeFighter.name} (Inimigo)...`;
+                setTimeout(() => {
+                    let alvos = playerTeam.filter(p => p.hp > 0);
+                    if (!alvos.length) return;
+                    let alvo = alvos[Math.floor(Math.random() * alvos.length)];
+                    let dano = activeFighter.golpes.basico.dano;
+
+                    if (itachiShieldActive) {
+                        itachiShieldActive = false;
+                        dano = 0;
+                        document.getElementById("battleLog").innerHTML += `<div>🛡️ Ilusão de Itachi ANULOU o ataque inimigo!</div>`;
+                    } else {
+                        alvo.hp = Math.max(0, alvo.hp - dano);
+                        document.getElementById("battleLog").innerHTML += `<div>⚠️ ${activeFighter.name} causou ${dano} de dano em ${alvo.name}.</div>`;
+                    }
+                    currentQueueIdx++;
+                    executarProximoTurnoCampanha();
+                }, 900);
+            } else {
+                document.getElementById("targetInstruction").innerText = `Turno de ${activeFighter.name}: Selecione um alvo e escolha sua ação.`;
+                document.getElementById("actionControls").style.display = "flex";
+            }
+        }
+
+        function renderArenaCampanha() {
+            document.getElementById("playerTeamContainer").innerHTML = playerTeam.map(p => `
+                <div class="fighter-box ${activeFighter && activeFighter.uid === p.uid && p.hp > 0 ? 'active-turn' : ''} ${p.hp <= 0 ? 'dead' : ''}">
+                    ${getAvatarHTML(p)}
+                    <strong style="color:#fff; font-size:0.9rem;">${p.name}</strong>
+                    <small style="font-size:0.75rem; color:#cbd5e1;">HP: ${p.hp}/${p.maxHp}</small>
+                    <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:${Math.max(0, (p.hp/p.maxHp)*100)}%"></div></div>
+                </div>
+            `).join('');
+
+            document.getElementById("enemyTeamContainer").innerHTML = enemyTeam.map(e => `
+                <div class="fighter-box ${e.hp > 0 && activeFighter && activeFighter.isPlayer ? 'enemy-targetable' : ''} ${selectedTargetUid === e.uid ? 'selected-target' : ''} ${e.hp <= 0 ? 'dead' : ''}"
+                     onclick="${e.hp > 0 && activeFighter && activeFighter.isPlayer ? `selectedTargetUid='${e.uid}'; renderArenaCampanha();` : ''}">
+                    ${getAvatarHTML(e)}
+                    <strong style="color:var(--ruby-red); font-size:0.9rem;">${e.name}</strong>
+                    <small style="font-size:0.75rem; color:#cbd5e1;">HP: ${e.hp}/${e.maxHp}</small>
+                    <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:${Math.max(0, (e.hp/e.maxHp)*100)}%"></div></div>
+                </div>
+            `).join('');
+        }
+
+        function executarTurno(tipo) {
+            let golpe = activeFighter.golpes[tipo] || activeFighter.golpes.basico;
+            if (!selectedTargetUid) { alert("Selecione um alvo inimigo!"); return; }
+            let alvo = enemyTeam.find(e => e.uid === selectedTargetUid);
+            if (!alvo || alvo.hp <= 0) { alert("Alvo inválido!"); return; }
+
+            let dano = golpe.dano + Math.floor(activeFighter.stats.atk * 0.15);
+            alvo.hp = Math.max(0, alvo.hp - dano);
+
+            document.getElementById("battleLog").innerHTML += `<div>👊 ${activeFighter.name} usou <strong>${golpe.nome}</strong> e causou ${dano} de dano.</div>`;
+            document.getElementById("actionControls").style.display = "none";
+            selectedTargetUid = null;
+            currentQueueIdx++;
+            executarProximoTurnoCampanha();
+        }
+
+        // PVP REAL COM SOCKETS E PAREAMENTO
+        function renderPvpLobby() {
+            let elo = calcularElo(pvpPoints, pvpStreak);
+            document.getElementById("pvpEloDisplay").innerText = elo;
+            document.getElementById("pvpPointsDisplay").innerText = pvpPoints;
+            document.getElementById("pvpStreakDisplay").innerText = pvpStreak;
+
+            let eloText = "Próximo Elo: Genin (100 pts)";
+            if (pvpPoints >= 2000) eloText = pvpStreak >= 10 ? "Elo Máximo Atingido! (Akatsuki)" : "Próximo Elo: Akatsuki (Necessita 10 Vitórias Consecutivas)";
+            else if (pvpPoints >= 1000) eloText = "Próximo Elo: Kage (2000 pts)";
+            else if (pvpPoints >= 500) eloText = "Próximo Elo: Anbu (1000 pts)";
+            else if (pvpPoints >= 300) eloText = "Próximo Elo: Jounin (500 pts)";
+            else if (pvpPoints >= 100) eloText = "Próximo Elo: Chunin (300 pts)";
+            document.getElementById("pvpNextRankText").innerText = eloText;
+
+            document.getElementById("pvpLobbyView").style.display = "block";
+            document.getElementById("pvpBattleDisplay").style.display = "none";
+        }
+
+        function buscarPartidaPvp() {
+            if (selectedTeamIds.length !== 3) {
+                alert("Selecione exatamente 3 ninjas no seu Esquadrão para batalhar no PvP!");
+                switchTab('teamTab', document.querySelectorAll('.nav-btn')[1]);
+                return;
+            }
+
+            document.getElementById("btnBuscarPvp").style.display = "none";
+            document.getElementById("btnCancelarPvp").style.display = "inline-flex";
+            
+            let meuElo = calcularElo(pvpPoints, pvpStreak);
+            searchTimer = 0;
+            document.getElementById("pvpSearchStatus").innerText = `Procurando oponente online do Elo ${meuElo}... (0s)`;
+
+            socket.emit('buscar_pvp', {
+                username: currentUser,
+                elo: meuElo,
+                points: pvpPoints,
+                team: selectedTeamIds
+            });
+
+            searchTimerInterval = setInterval(() => {
+                searchTimer++;
+                document.getElementById("pvpSearchStatus").innerText = `Procurando oponente online do Elo ${meuElo}... (${searchTimer}s)`;
+
+                if (searchTimer >= 120) {
+                    cancelarBuscaPvp(true);
+                    document.getElementById("pvpSearchStatus").innerText = "não há players buscando partidas PvP no momento, tente mais tarde";
+                    alert("não há players buscando partidas PvP no momento, tente mais tarde");
+                }
+            }, 1000);
+        }
+
+        function cancelarBuscaPvp(silencioso = false) {
+            if (searchTimerInterval) clearInterval(searchTimerInterval);
+            socket.emit('cancelar_pvp');
+            document.getElementById("btnBuscarPvp").style.display = "inline-flex";
+            document.getElementById("btnCancelarPvp").style.display = "none";
+            if (!silencioso) {
+                document.getElementById("pvpSearchStatus").innerText = "Busca cancelada.";
+            }
+        }
+
+        socket.on('partida_encontrada', (data) => {
+            if (searchTimerInterval) clearInterval(searchTimerInterval);
+            document.getElementById("btnBuscarPvp").style.display = "inline-flex";
+            document.getElementById("btnCancelarPvp").style.display = "none";
+            document.getElementById("pvpSearchStatus").innerText = "";
+            iniciarCombatePvpReal(data.rival);
+        });
+
+        let pvpPlayerTeam = [], pvpEnemyTeam = [], pvpTurnQueue = [], pvpQueueIdx = 0, pvpActiveFighter = null, pvpSelectedTargetUid = null;
+
+        function iniciarCombatePvpReal(oponente) {
+            let sinergiasMeuTime = verificarSinergiasEquipe(selectedTeamIds);
+            let meuDanoBonus = 1.0;
+            if (sinergiasMeuTime.some(s => s.tipo === 'equipe7')) meuDanoBonus += 0.05;
+
+            pvpPlayerTeam = selectedTeamIds.map((id, i) => {
+                let item = myInventory[id];
+                let baseData = gachaPool.find(c => c.id === id);
+                let st = getCharacterStats(item, selectedTeamIds);
+                return {
+                    ...baseData, ...item,
+                    uid: 'pvp_p_' + i, isPlayer: true,
+                    hp: st.hp, maxHp: st.hp, stats: st,
+                    ce: st.chakra, maxCe: st.chakra,
+                    bonusDanoMult: meuDanoBonus
+                };
+            });
+
+            pvpEnemyTeam = oponente.team.map((id, i) => {
+                let baseData = gachaPool.find(c => c.id === id) || gachaPool[i];
+                let st = baseData.stats;
+                return {
+                    ...baseData,
+                    uid: 'pvp_e_' + i, isPlayer: false,
+                    hp: st.hp, maxHp: st.hp, stats: st,
+                    ce: st.chakra, maxCe: st.chakra
+                };
+            });
+
+            document.getElementById("pvpLobbyView").style.display = "none";
+            document.getElementById("pvpBattleDisplay").style.display = "block";
+            document.getElementById("pvpBattleTitle").innerText = `PvP Online: ${currentUser} VS ${oponente.username}`;
+            document.getElementById("pvpBattleLog").innerHTML = `<div style="color:var(--gold-accent);">⚔️ Batalha PvP iniciada contra o player real ${oponente.username}!</div>`;
+
+            proximaRodadaPvp();
+        }
+
+        function proximaRodadaPvp() {
+            let todos = [...pvpPlayerTeam.filter(p => p.hp > 0), ...pvpEnemyTeam.filter(e => e.hp > 0)];
+            pvpTurnQueue = todos.sort((a, b) => b.stats.vel - a.stats.vel);
+            pvpQueueIdx = 0;
+            executarProximoTurnoPvp();
+        }
+
+        function executarProximoTurnoPvp() {
+            if (!pvpPlayerTeam.some(p => p.hp > 0)) {
+                pvpStreak = 0;
+                salvarJogo();
+                alert("Derrota na partida Ranqueada! Sua sequência de vitórias foi resetada para 0.");
+                renderPvpLobby();
+                return;
+            }
+            if (!pvpEnemyTeam.some(e => e.hp > 0)) {
+                pvpPoints += 10;
+                pvpStreak += 1;
+                salvarJogo();
+                alert(`VITÓRIA NO PVP! +10 Pontos Ranqueados. Streak atual: ${pvpStreak}`);
+                renderPvpLobby();
+                return;
+            }
+
+            if (pvpQueueIdx >= pvpTurnQueue.length) {
+                proximaRodadaPvp();
+                return;
+            }
+
+            pvpActiveFighter = pvpTurnQueue[pvpQueueIdx];
+            if (pvpActiveFighter.hp <= 0) {
+                pvpQueueIdx++;
+                executarProximoTurnoPvp();
+                return;
+            }
+
+            pvpSelectedTargetUid = null;
+            renderPvpArena();
+
+            if (!pvpActiveFighter.isPlayer) {
+                document.getElementById("pvpActionControls").style.display = "none";
+                document.getElementById("pvpTargetInstruction").innerText = `Turno de ${pvpActiveFighter.name} (Oponente)...`;
+
+                setTimeout(() => {
+                    let alvos = pvpPlayerTeam.filter(p => p.hp > 0);
+                    if (!alvos.length) return;
+                    let alvo = alvos[Math.floor(Math.random() * alvos.length)];
+                    let dano = pvpActiveFighter.golpes.basico.dano;
+
+                    alvo.hp = Math.max(0, alvo.hp - dano);
+                    document.getElementById("pvpBattleLog").innerHTML += `<div>⚠️ ${pvpActiveFighter.name} rival atacou ${alvo.name} causando ${dano} de dano!</div>`;
+                    
+                    let logBox = document.getElementById("pvpBattleLog");
+                    logBox.scrollTop = logBox.scrollHeight;
+
+                    pvpQueueIdx++;
+                    executarProximoTurnoPvp();
+                }, 900);
+            } else {
+                document.getElementById("pvpTargetInstruction").innerText = `Seu Turno (${pvpActiveFighter.name})! Selecione o alvo oponente e escolha o golpe.`;
+                document.getElementById("pvpActionControls").style.display = "flex";
+            }
+        }
+
+        function renderPvpArena() {
+            document.getElementById("pvpPlayerTeamContainer").innerHTML = pvpPlayerTeam.map(p => `
+                <div class="fighter-box ${pvpActiveFighter && pvpActiveFighter.uid === p.uid && p.hp > 0 ? 'active-turn' : ''} ${p.hp <= 0 ? 'dead' : ''}">
+                    ${getAvatarHTML(p)}
+                    <strong style="color:#fff; font-size:0.9rem;">${p.name}</strong>
+                    <small style="font-size:0.75rem; color:#cbd5e1;">HP: ${p.hp}/${p.maxHp}</small>
+                    <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:${Math.max(0, (p.hp/p.maxHp)*100)}%"></div></div>
+                </div>
+            `).join('');
+
+            document.getElementById("pvpEnemyTeamContainer").innerHTML = pvpEnemyTeam.map(e => `
+                <div class="fighter-box ${e.hp > 0 && pvpActiveFighter && pvpActiveFighter.isPlayer ? 'enemy-targetable' : ''} ${pvpSelectedTargetUid === e.uid ? 'selected-target' : ''} ${e.hp <= 0 ? 'dead' : ''}"
+                     onclick="${e.hp > 0 && pvpActiveFighter && pvpActiveFighter.isPlayer ? `pvpSelectedTargetUid='${e.uid}'; renderPvpArena();` : ''}">
+                    ${getAvatarHTML(e)}
+                    <strong style="color:var(--ruby-red); font-size:0.9rem;">${e.name}</strong>
+                    <small style="font-size:0.75rem; color:#cbd5e1;">HP: ${e.hp}/${e.maxHp}</small>
+                    <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:${Math.max(0, (e.hp/e.maxHp)*100)}%"></div></div>
+                </div>
+            `).join('');
+        }
+
+        function executarTurnoPvp(tipo) {
+            let golpe = pvpActiveFighter.golpes[tipo] || pvpActiveFighter.golpes.basico;
+            if (!pvpSelectedTargetUid) { alert("Selecione um oponente para atacar!"); return; }
+            let alvo = pvpEnemyTeam.find(e => e.uid === pvpSelectedTargetUid);
+            if (!alvo || alvo.hp <= 0) { alert("Alvo inválido!"); return; }
+
+            let dano = golpe.dano + Math.floor(pvpActiveFighter.stats.atk * 0.15);
+            alvo.hp = Math.max(0, alvo.hp - dano);
+
+            document.getElementById("pvpBattleLog").innerHTML += `<div>👊 ${pvpActiveFighter.name} usou <strong>${golpe.nome}</strong> e causou ${dano} de dano!</div>`;
+            let logBox = document.getElementById("pvpBattleLog");
+            logBox.scrollTop = logBox.scrollHeight;
+
+            document.getElementById("pvpActionControls").style.display = "none";
+            pvpSelectedTargetUid = null;
+            pvpQueueIdx++;
+            executarProximoTurnoPvp();
+        }
+
+        // RANKING GLOBAL VIA SERVIDOR
+        async function renderRankingTable() {
+            try {
+                const response = await fetch(SERVER_URL + '/api/ranking');
+                const top10 = await response.json();
+                let tbody = document.getElementById("rankingTableBody");
+
+                if (!top10.length) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Nenhum jogador ranqueado no servidor ainda.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = top10.map((p, idx) => {
+                    let posClass = idx === 0 ? 'top1' : '';
+                    let medal = idx === 0 ? '🥇 ' : (idx === 1 ? '🥈 ' : (idx === 2 ? '🥉 ' : ''));
+                    let elo = calcularElo(p.pvpPoints, p.pvpStreak);
+
+                    return `
+                        <tr class="${posClass}">
+                            <td><strong>${medal}#${idx + 1}</strong></td>
+                            <td style="color:#fff;"><strong>${p.username}</strong> ${p.username === currentUser ? '<span style="color:var(--gold-accent);">(Você)</span>' : ''}</td>
+                            <td style="color:var(--gold-accent); font-weight:700;">${elo}</td>
+                            <td style="color:#38bdf8; font-weight:700;">${p.pvpPoints} pts</td>
+                            <td style="color:var(--ruby-red); font-weight:700;">🔥 ${p.pvpStreak}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error("Erro ao buscar ranking global:", err);
+            }
+        }
+    </script>
+</body>
+</html>
