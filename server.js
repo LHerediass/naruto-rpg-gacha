@@ -20,7 +20,7 @@ const io = new Server(server, {
 // CONEXÃO COM O MONGODB ATLAS
 // ==========================================
 // Substitua a string abaixo pela sua URI real do MongoDB se necessário
-const MONGO_URI = process.env.MONGO_URI || "SUA_URI_DO_MONGODB_AQUI";
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://lucasheredia1453_db_user:Souza11@heredias.iutcpbr.mongodb.net/test?retryWrites=true&w=majority";
 
 mongoose.connect(MONGO_URI)
     .then(() => console.log("Conectado ao MongoDB Atlas com sucesso!"))
