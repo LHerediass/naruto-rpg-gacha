@@ -725,7 +725,7 @@
 
     <div class="dashboard-container">
         
-        <!-- TOP BAR (SEM O BOTÃO OBTER GEMAS GRÁTIS) -->
+        <!-- TOP BAR -->
         <header class="top-user-bar">
             <div class="user-info">
                 <div class="level-badge" id="userLevelBadge">1</div>
@@ -1052,8 +1052,8 @@
     </div>
 
     <script>
-        // CONEXÃO COM O SERVIDOR (Ajuste esta URL quando hospedar o backend)
-        const SERVER_URL = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://naruto-rpg-gacha.onrender.com';
+        // CONEXÃO COM O SERVIDOR
+        const SERVER_URL = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://seu-servidor-backend.onrender.com';
         const socket = io(SERVER_URL);
 
         // CONFIGURAÇÃO DOS DROP DE EQUIPAMENTOS DE BOSS
@@ -1168,7 +1168,6 @@
             }
         ];
 
-        // ELO CALCULATOR
         function calcularElo(pts, streak) {
             if (pts >= 2000 && streak >= 10) return "Akatsuki";
             if (pts >= 2000) return "Kage";
@@ -1252,7 +1251,6 @@
             `;
         }
 
-        // AUTENTICAÇÃO COM SERVIDOR
         function switchAuthMode(mode, btn) {
             isRegisterMode = (mode === 'register');
             document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
@@ -1358,7 +1356,6 @@
             if (tabId === 'rankingTab') renderRankingTable();
         }
 
-        // GACHA
         function invocar(qtd) {
             if (gems < qtd * 10) { alert("Gemas insuficientes!"); return; }
             gems -= qtd * 10;
@@ -1572,6 +1569,316 @@
             renderEquipmentInventory();
         }
 
+        // BOSS RAID MULTIPLAYER CO-OP
+        function atualizarLobbyBoss() {
+            document.getElementById("bossLobbyView").style.display = "block";
+            document.getElementById("partyRoomView").style.display = "none";
+            document.getElementById("bossBattleDisplay").style.display = "none";
+            socket.emit('pedir_salas_boss');
+        }
+
+        function abrirCriarPartyModal() {
+            document.getElementById("modalCriarParty").style.display = "flex";
+        }
+
+        function fecharCriarPartyModal() {
+            document.getElementById("modalCriarParty").style.display = "none";
+        }
+
+        function confirmarCriarParty() {
+            let nomeParty = document.getElementById("inputPartyName").value.trim();
+            let tipoBoss = document.getElementById("selectBossType").value;
+            if (!nomeParty) nomeParty = `Esquadrão de ${currentUser}`;
+
+            fecharCriarPartyModal();
+            socket.emit('criar_party_boss', { username: currentUser, partyName: nomeParty, bossType: tipoBoss });
+        }
+
+        socket.on('lista_salas_boss', (salas) => {
+            let container = document.getElementById("publicPartiesList");
+            if (!salas.length) {
+                container.innerHTML = `<p style="color: #94a3b8; font-size: 0.88rem;">Nenhuma party aberta no momento. Crie a sua própria sala!</p>`;
+                return;
+            }
+            container.innerHTML = salas.map(s => `
+                <div class="party-slot">
+                    <div>
+                        <strong style="color: var(--gold-accent);">${s.partyName}</strong>
+                        <div style="font-size: 0.78rem; color: #cbd5e1;">Líder: ${s.leader} | Boss: ${BOSS_DATABASE[s.bossType].name} | Membros: ${s.members.length}/3</div>
+                    </div>
+                    <button class="btn-ninja btn-gold" style="font-size: 0.78rem; padding: 6px 12px;" onclick="entrarNaParty('${s.id}')">Entrar na Sala</button>
+                </div>
+            `).join('');
+        });
+
+        function entrarNaParty(partyId) {
+            socket.emit('entrar_party_boss', { partyId, username: currentUser });
+        }
+
+        socket.on('entrar_party_sucesso', (party) => {
+            currentParty = party;
+            renderizarSalaParty();
+        });
+
+        socket.on('atualizar_party', (party) => {
+            currentParty = party;
+            renderizarSalaParty();
+        });
+
+        function sairDaParty() {
+            if (currentParty) {
+                socket.emit('sair_party_boss', { partyId: currentParty.id, username: currentUser });
+                currentParty = null;
+            }
+            atualizarLobbyBoss();
+        }
+
+        function renderizarSalaParty() {
+            if (!currentParty) return;
+            document.getElementById("bossLobbyView").style.display = "none";
+            document.getElementById("partyRoomView").style.display = "block";
+            document.getElementById("bossBattleDisplay").style.display = "none";
+
+            let bossData = BOSS_DATABASE[currentParty.bossType];
+            document.getElementById("roomTitleDisplay").innerText = currentParty.partyName;
+            document.getElementById("roomBossInfo").innerHTML = `Boss Alvo: <strong>${bossData.name}</strong> (HP: ${bossData.hp} | ATK: ${bossData.atk})`;
+
+            let membersDiv = document.getElementById("roomMembersContainer");
+            membersDiv.innerHTML = currentParty.members.map((m, idx) => `
+                <div class="party-slot">
+                    <div>
+                        <strong style="color:#fff;">Slot #${idx + 1}: ${m.username}</strong>
+                        <div style="font-size:0.75rem; color:#38bdf8;">Shinobi: ${m.shinobi ? gachaPool.find(c => c.id === m.shinobi.id).name : 'Aguardando escolha...'}</div>
+                    </div>
+                    <span style="font-size:0.8rem; font-weight:700; color: ${m.ready ? '#4ade80' : '#f59e0b'};">${m.ready ? '✓ PRONTO' : '⏳ ESCOLHENDO'}</span>
+                </div>
+            `).join('');
+
+            let selectorDiv = document.getElementById("partyShinobiSelector");
+            let ninjaIds = Object.keys(myInventory);
+            if (!ninjaIds.length) {
+                selectorDiv.innerHTML = "<p style='color:#94a3b8; font-size:0.8rem;'>Recrute shinobis no Gacha para participar!</p>";
+            } else {
+                selectorDiv.innerHTML = ninjaIds.map(nid => {
+                    let baseData = gachaPool.find(c => c.id === nid);
+                    let meuMi = currentParty.members.find(m => m.username === currentUser);
+                    let isEscolhido = meuMi && meuMi.shinobi && meuMi.shinobi.id === nid;
+                    return `
+                        <div style="background:#1b0e06; border:2px solid ${isEscolhido ? 'var(--gold-accent)' : 'var(--panel-border)'}; border-radius:8px; padding:8px; text-align:center; cursor:pointer; width:100px;" onclick="escolherShinobiParty('${nid}')">
+                            ${getAvatarHTML(baseData)}
+                            <div style="font-size:0.7rem; color:#fff; font-weight:700; margin-top:4px;">${baseData.name}</div>
+                            ${isEscolhido ? '<span style="font-size:0.6rem; color:var(--gold-accent); font-weight:800;">SELECIONADO</span>' : ''}
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            let btnStart = document.getElementById("btnStartBossBattle");
+            if (currentParty.leader === currentUser) {
+                btnStart.style.display = "inline-flex";
+            } else {
+                btnStart.style.display = "none";
+            }
+        }
+
+        function escolherShinobiParty(shinobiId) {
+            let item = myInventory[shinobiId];
+            let baseData = gachaPool.find(c => c.id === shinobiId);
+            let st = getCharacterStats(item, selectedTeamIds);
+            let shinobiPayload = { ...baseData, ...item, stats: st };
+
+            socket.emit('escolher_shinobi_party', { partyId: currentParty.id, username: currentUser, shinobi: shinobiPayload });
+        }
+
+        function alternarProntoParty() {
+            socket.emit('toggle_pronto_party', { partyId: currentParty.id, username: currentUser });
+        }
+
+        function liderIniciarBossRaid() {
+            if (currentParty.leader !== currentUser) return;
+            socket.emit('lider_iniciar_boss', { partyId: currentParty.id });
+        }
+
+        socket.on('iniciar_batalha_boss_coop', (partyData) => {
+            currentParty = partyData;
+            iniciarBatalhaBossReal();
+        });
+
+        let bossPlayerTeam = [], bossEnemyTeam = [], bossTurnQueue = [], bossQueueIdx = 0, bossActiveFighter = null, bossSelectedTargetUid = null;
+
+        function iniciarBatalhaBossReal() {
+            document.getElementById("bossLobbyView").style.display = "none";
+            document.getElementById("partyRoomView").style.display = "none";
+            document.getElementById("bossBattleDisplay").style.display = "block";
+
+            let bossData = BOSS_DATABASE[currentParty.bossType];
+
+            bossPlayerTeam = currentParty.members.map((m, i) => {
+                let sh = m.shinobi;
+                return {
+                    ...sh,
+                    uid: 'boss_p_' + i, isPlayer: true,
+                    hp: sh.stats.hp, maxHp: sh.stats.hp,
+                    ce: sh.stats.chakra, maxCe: sh.stats.chakra,
+                    owner: m.username
+                };
+            });
+
+            bossEnemyTeam = [
+                {
+                    uid: 'boss_e_0', name: bossData.name, icon: bossData.icon, image: "", isPlayer: false,
+                    hp: bossData.hp, maxHp: bossData.hp, ce: 500, maxCe: 500,
+                    stats: { vel: 130, atk: bossData.atk },
+                    golpes: bossData.golpes
+                }
+            ];
+
+            document.getElementById("bossBattleTitle").innerText = `Boss Raid Co-op: ${bossData.name}`;
+            document.getElementById("bossBattleLog").innerHTML = `<div style="color:var(--gold-accent);">⚔️ Batalha cooperativa iniciada contra ${bossData.name}!</div>`;
+
+            proximaRodadaBoss();
+        }
+
+        function abandonarBossRaid() {
+            atualizarLobbyBoss();
+        }
+
+        function proximaRodadaBoss() {
+            let todos = [...bossPlayerTeam.filter(p => p.hp > 0), ...bossEnemyTeam.filter(e => e.hp > 0)];
+            bossTurnQueue = todos.sort((a, b) => b.stats.vel - a.stats.vel);
+            bossQueueIdx = 0;
+            executarProximoTurnoBoss();
+        }
+
+        function executarProximoTurnoBoss() {
+            if (!bossPlayerTeam.some(p => p.hp > 0)) {
+                alert("Derrota na Boss Raid Co-op!");
+                abandonarBossRaid();
+                return;
+            }
+            if (!bossEnemyTeam.some(e => e.hp > 0)) {
+                gems += 20;
+                let dropKey = sortearDropBoss();
+                if (dropKey) {
+                    let newInvKey = 'eq_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+                    equipmentInventory[newInvKey] = { templateKey: dropKey };
+                    alert(`VITÓRIA NA BOSS RAID! +20 Gemas e Item Conquistado: ${CATALOGO_EQUIPAMENTOS[dropKey].nome}!`);
+                } else {
+                    alert("VITÓRIA NA BOSS RAID! +20 Gemas ganhas.");
+                }
+                updateUI();
+                renderEquipmentInventory();
+                abandonarBossRaid();
+                return;
+            }
+
+            if (bossQueueIdx >= bossTurnQueue.length) {
+                proximaRodadaBoss();
+                return;
+            }
+
+            bossActiveFighter = bossTurnQueue[bossQueueIdx];
+            if (bossActiveFighter.hp <= 0) {
+                bossQueueIdx++;
+                executarProximoTurnoBoss();
+                return;
+            }
+
+            bossSelectedTargetUid = null;
+            renderBossArena();
+
+            if (!bossActiveFighter.isPlayer) {
+                document.getElementById("bossActionControls").style.display = "none";
+                document.getElementById("bossTargetInstruction").innerText = `Turno de ${bossActiveFighter.name} (Boss)...`;
+
+                setTimeout(() => {
+                    let alvos = bossPlayerTeam.filter(p => p.hp > 0);
+                    if (!alvos.length) return;
+                    let alvo = alvos[Math.floor(Math.random() * alvos.length)];
+                    let dano = bossActiveFighter.golpes.basico.dano;
+
+                    alvo.hp = Math.max(0, alvo.hp - dano);
+                    document.getElementById("bossBattleLog").innerHTML += `<div>⚠️ ${bossActiveFighter.name} atacou ${alvo.name} (${alvo.owner}) causando ${dano} de dano!</div>`;
+                    
+                    let logBox = document.getElementById("bossBattleLog");
+                    logBox.scrollTop = logBox.scrollHeight;
+
+                    bossQueueIdx++;
+                    executarProximoTurnoBoss();
+                }, 900);
+            } else {
+                if (bossActiveFighter.owner === currentUser) {
+                    document.getElementById("bossTargetInstruction").innerText = `Seu Turno (${bossActiveFighter.name})! Selecione o Boss e escolha o golpe.`;
+                    document.getElementById("bossActionControls").style.display = "flex";
+                } else {
+                    document.getElementById("bossActionControls").style.display = "none";
+                    document.getElementById("bossTargetInstruction").innerText = `Turno do aliado ${bossActiveFighter.owner} (${bossActiveFighter.name})...`;
+                    setTimeout(() => {
+                        let alvos = bossEnemyTeam.filter(e => e.hp > 0);
+                        if (!alvos.length) return;
+                        let alvo = alvos[0];
+                        let dano = bossActiveFighter.golpes.basico.dano + Math.floor(bossActiveFighter.stats.atk * 0.15);
+                        alvo.hp = Math.max(0, alvo.hp - dano);
+
+                        document.getElementById("bossBattleLog").innerHTML += `<div>👊 Aliado ${bossActiveFighter.owner} (${bossActiveFighter.name}) causou ${dano} de dano no Boss!</div>`;
+                        bossQueueIdx++;
+                        executarProximoTurnoBoss();
+                    }, 1000);
+                }
+            }
+        }
+
+        function sortearDropBoss() {
+            let roll = Math.random();
+            let acumulado = 0;
+            for (let key in CATALOGO_EQUIPAMENTOS) {
+                acumulado += CATALOGO_EQUIPAMENTOS[key].chance;
+                if (roll <= acumulado) return key;
+            }
+            return 'bandana_normal';
+        }
+
+        function renderBossArena() {
+            document.getElementById("bossPlayerTeamContainer").innerHTML = bossPlayerTeam.map(p => `
+                <div class="fighter-box ${bossActiveFighter && bossActiveFighter.uid === p.uid && p.hp > 0 ? 'active-turn' : ''} ${p.hp <= 0 ? 'dead' : ''}">
+                    ${getAvatarHTML(p)}
+                    <strong style="color:#fff; font-size:0.9rem;">${p.name}</strong>
+                    <small style="font-size:0.7rem; color:var(--gold-accent);">Player: ${p.owner}</small>
+                    <small style="font-size:0.75rem; color:#cbd5e1;">HP: ${p.hp}/${p.maxHp}</small>
+                    <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:${Math.max(0, (p.hp/p.maxHp)*100)}%"></div></div>
+                </div>
+            `).join('');
+
+            document.getElementById("bossEnemyContainer").innerHTML = bossEnemyTeam.map(e => `
+                <div class="fighter-box ${e.hp > 0 && bossActiveFighter && bossActiveFighter.isPlayer && bossActiveFighter.owner === currentUser ? 'enemy-targetable' : ''} ${bossSelectedTargetUid === e.uid ? 'selected-target' : ''} ${e.hp <= 0 ? 'dead' : ''}"
+                     onclick="${e.hp > 0 && bossActiveFighter && bossActiveFighter.isPlayer && bossActiveFighter.owner === currentUser ? `bossSelectedTargetUid='${e.uid}'; renderBossArena();` : ''}">
+                    ${getAvatarHTML(e)}
+                    <strong style="color:var(--ruby-red); font-size:0.9rem;">${e.name}</strong>
+                    <small style="font-size:0.75rem; color:#cbd5e1;">HP: ${e.hp}/${e.maxHp}</small>
+                    <div class="hp-bar-bg"><div class="hp-bar-fill" style="width:${Math.max(0, (e.hp/e.maxHp)*100)}%"></div></div>
+                </div>
+            `).join('');
+        }
+
+        function executarTurnoBoss(tipo) {
+            let golpe = bossActiveFighter.golpes[tipo] || bossActiveFighter.golpes.basico;
+            if (!bossSelectedTargetUid) { alert("Selecione o Boss para atacar!"); return; }
+            let alvo = bossEnemyTeam.find(e => e.uid === bossSelectedTargetUid);
+            if (!alvo || alvo.hp <= 0) { alert("Alvo inválido!"); return; }
+
+            let dano = golpe.dano + Math.floor(bossActiveFighter.stats.atk * 0.15);
+            alvo.hp = Math.max(0, alvo.hp - dano);
+
+            document.getElementById("bossBattleLog").innerHTML += `<div>👊 ${bossActiveFighter.name} usou <strong>${golpe.nome}</strong> e causou ${dano} de dano no Boss!</div>`;
+            let logBox = document.getElementById("bossBattleLog");
+            logBox.scrollTop = logBox.scrollHeight;
+
+            document.getElementById("bossActionControls").style.display = "none";
+            bossSelectedTargetUid = null;
+            bossQueueIdx++;
+            executarProximoTurnoBoss();
+        }
+
         // CAMPANHA
         function renderCampaignMap() {
             document.getElementById("progressText").innerText = `Episódio ${currentEpisode} / ${totalEpisodes}`;
@@ -1746,7 +2053,7 @@
             executarProximoTurnoCampanha();
         }
 
-        // PVP REAL COM SOCKETS E PAREAMENTO
+        // PVP RANQUEADO
         function renderPvpLobby() {
             let elo = calcularElo(pvpPoints, pvpStreak);
             document.getElementById("pvpEloDisplay").innerText = elo;
